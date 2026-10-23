@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/tsorder-core"]
+members = ["crates/tsorder-core", "crates/tsorder-bench"]
 
 [workspace.package]
 version = "0.1.0"

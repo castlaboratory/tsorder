@@ -1,0 +1,75 @@
+# Q7 — memory rule: poly-log vs n^0.3 vs n^0.4 vs 2*sqrt(n) for the default
+# PACF-clip. The gap between available theory (poly-log, n^0.3) and the
+# empirical default (n^0.4). Decides the Memory enum default (T-2, D-06).
+
+[run]
+name = "q7"
+out = "benchmark/results/q7"
+n = [50, 100, 200, 400, 800, 1600, 3200, 10000]
+replications = 2000
+replications_large = 1000
+large_from = 3200
+
+[[dgp]]
+name = "wn"
+true_order = 0
+
+[[dgp]]
+name = "ar1_09"
+phi = [0.9]
+true_order = 1
+
+[[dgp]]
+name = "ar2_strong"
+phi = [1.2, -0.6]
+true_order = 2
+
+[[dgp]]
+name = "ar4_subset"
+phi = [0.5, 0.0, 0.0, 0.3]
+true_order = 4
+
+[[dgp]]
+name = "ar12_seasonal"
+phi = [0.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4]
+true_order = 12
+
+[[estimator]]
+name = "pacf_mem_n03"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+memory = "n03"
+
+[[estimator]]
+name = "pacf_mem_n04"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+memory = "n04"
+
+[[estimator]]
+name = "pacf_mem_sqrt2"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+memory = "sqrt2"
+
+[[estimator]]
+name = "pacf_mem_log2"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+memory = "log2"
+
+[[estimator]]
+name = "pacf_mem_log4"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+memory = "log4"

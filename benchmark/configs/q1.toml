@@ -1,0 +1,116 @@
+# Q1 — PACF-clip vs BIC vs JirakBand by n and DGP (one accuracy figure +
+# the white-noise panel is the level under H0). Sensitivity in c included.
+
+[run]
+name = "q1"
+out = "benchmark/results/q1"
+n = [50, 100, 200, 400, 800, 1600, 3200, 10000]
+replications = 2000
+replications_large = 1000
+large_from = 3200
+
+[[dgp]]
+name = "wn"
+true_order = 0
+
+[[dgp]]
+name = "ar1_05"
+phi = [0.5]
+true_order = 1
+
+[[dgp]]
+name = "ar1_09"
+phi = [0.9]
+true_order = 1
+
+[[dgp]]
+name = "ar1_095"
+phi = [0.95]
+true_order = 1
+
+[[dgp]]
+name = "ar1_neg05"
+phi = [-0.5]
+true_order = 1
+
+[[dgp]]
+name = "ar2_strong"
+phi = [1.2, -0.6]
+true_order = 2
+
+[[dgp]]
+name = "ar2_weak"
+phi = [0.3, 0.15]
+true_order = 2
+
+[[dgp]]
+name = "ar2_medium"
+phi = [0.5, 0.3]
+true_order = 2
+
+[[dgp]]
+name = "ar4_subset"
+phi = [0.5, 0.0, 0.0, 0.3]
+true_order = 4
+
+[[dgp]]
+name = "ar12_seasonal"
+phi = [0.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4]
+true_order = 12
+
+[[estimator]]
+name = "bic_yw"
+kind = "ic"
+criterion = "bic"
+
+[[estimator]]
+name = "hq_yw"
+kind = "ic"
+criterion = "hq"
+
+[[estimator]]
+name = "aic_yw"
+kind = "ic"
+criterion = "aic"
+
+[[estimator]]
+name = "pacf_bic10"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.0
+
+[[estimator]]
+name = "pacf_bic15"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+
+[[estimator]]
+name = "pacf_bic20"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 2.0
+
+[[estimator]]
+name = "pacf_gumbel05"
+kind = "fh"
+statistic = "pacf"
+threshold = "gumbel"
+alpha = 0.05
+
+[[estimator]]
+name = "jirak_gumbel05"
+kind = "fh"
+statistic = "jirak_band"
+threshold = "gumbel"
+alpha = 0.05
+
+[[estimator]]
+name = "jirak_gumbel_invn"
+kind = "fh"
+statistic = "jirak_band"
+threshold = "gumbel"
+alpha = "inv_n"

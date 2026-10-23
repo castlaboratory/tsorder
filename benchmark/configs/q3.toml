@@ -1,0 +1,66 @@
+# Q3 — contamination: PacfRobust vs classical Pacf vs BIC under additive
+# outliers and heavy-tailed innovations (T-6).
+
+[run]
+name = "q3"
+out = "benchmark/results/q3"
+n = [50, 100, 200, 400, 800, 1600, 3200, 10000]
+replications = 2000
+replications_large = 1000
+large_from = 3200
+
+[[dgp]]
+name = "ar2_clean"
+phi = [1.2, -0.6]
+true_order = 2
+
+[[dgp]]
+name = "ar2_outliers"
+phi = [1.2, -0.6]
+outlier_prob = 0.05
+outlier_sd = 5.0
+true_order = 2
+
+[[dgp]]
+name = "ar2_t3"
+phi = [1.2, -0.6]
+innovations = "t3"
+true_order = 2
+
+[[dgp]]
+name = "ar2_t2"
+phi = [1.2, -0.6]
+innovations = "t2"
+true_order = 2
+
+[[estimator]]
+name = "pacf_bic15"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+
+[[estimator]]
+name = "pacf_robust"
+kind = "fh"
+statistic = "pacf_robust"
+threshold = "bic"
+c = 1.5
+
+[[estimator]]
+name = "bic_yw"
+kind = "ic"
+criterion = "bic"
+
+[[estimator]]
+name = "bic_burg"
+kind = "ic"
+criterion = "bic"
+method = "burg"
+
+[[estimator]]
+name = "jirak_gumbel05"
+kind = "fh"
+statistic = "jirak_band"
+threshold = "gumbel"
+alpha = 0.05

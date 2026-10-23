@@ -1,0 +1,18 @@
+[package]
+name = "tsorder-bench"
+description = "Benchmark runner for tsorder-core: reads a TOML design, runs DGP x n x estimator x replication with fixed seeds, writes aggregated CSV"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# External dependencies are allowed here (unlike the core): rayon for
+# parallelism, serde + toml for the design files.
+[dependencies]
+tsorder-core = { path = "../tsorder-core", features = ["sim"] }
+rayon = "1.10"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
