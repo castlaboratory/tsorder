@@ -1,17 +1,27 @@
-# tsorder (R) — planned
+# tsorder (R)
 
-Thin `extendr` wrapper over `tsorder-core`, tidyverse-friendly, with a pkgdown
-site. Target API (to be confirmed):
+Thin [extendr](https://extendr.github.io/) shell over the dependency-free
+Rust core `tsorder-core` (no statistical logic lives here — D-01). See the
+[package site](https://castlaboratory.github.io/tsorder/r/) and the
+[project page](https://castlaboratory.github.io/tsorder/).
 
 ```r
-fit <- order_select(x, method = "pacf")      # or "bic", "aic", "hq", "acf_bartlett", "ensemble", ...
-fit$order
-autoplot(fit)                                 # statistic/criterion path with threshold line
-as_tibble(fit)
+# from the repository checkout (needs Rust >= 1.81):
+# install.packages("rextendr"); rextendr::document("bindings/r")
+devtools::install("bindings/r")
 
-fh_order(x, statistic = "pacf", threshold = "bic", c = 1.5, memory = NULL)
-ic_order(x, criterion = "bic", max_order = NULL)
-ensemble_order(x, statistics = c("pacf", "long_ar_ols"), rule = "majority")
+library(tsorder)
+x <- arima.sim(list(ar = c(1.2, -0.6)), 400)
+
+fit <- order_select(x)          # PACF-clip, the default
+fit$order
+ggplot2::autoplot(fit)
+
+ic_order(x, "bic")$order        # classical criteria
+svc_order(x)$order              # McMillan degree (robust to observation noise)
+integration_order(cumsum(x))$d  # how many differences
 ```
 
-Setup: `rextendr::use_extendr()`, vendor Rust deps for CRAN (`src/rust/vendor`), `SystemRequirements: Cargo (Rust's package manager), rustc`.
+Cross-validated against R itself in the test suite: the Levinson PACF
+matches `stats::ar.yw` to 1e-10, `qn()` matches `robustbase::Qn` to 1e-12,
+and `eacf()` matches `TSA::eacf` digit for digit.

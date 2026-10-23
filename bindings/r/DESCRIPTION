@@ -1,0 +1,50 @@
+Package: tsorder
+Title: Order Selection for Time Series Models
+Version: 0.1.0
+Authors@R: c(
+    person("André", "Leite", , "leite@castlab.org", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4718-9766")),
+    person("Raydonal", "Ospina", , "raydonal@castlab.org", role = "aut",
+           comment = c(ORCID = "0000-0002-9884-9090")),
+    person("Cristiano", "Ferraz", , "cferraz@castlab.org", role = "aut",
+           comment = c(ORCID = "0000-0002-6838-6734")),
+    person("Hugo", "Vasconcelos", , "hugo.vasconcelos@ufpe.br", role = "aut",
+           comment = c(ORCID = "0000-0001-6249-0920")),
+    person("Diogo", "Bezerra", , "diogo.bezerra@ufpe.br", role = "aut",
+           comment = c(ORCID = "0000-0002-1216-8674"))
+  )
+Description: Order selection for time series models: classical information
+    criteria (AIC, AICc, BIC, HQ, FPE, CAT, MDL over Yule-Walker, Burg or
+    conditional least-squares fits) side by side with the threshold ("clip")
+    estimators of Fine and Hwang (1979) <doi:10.1109/TAC.1979.1102041> built
+    on studentized statistics (PACF, Bartlett-studentized ACF, inverse PACF,
+    the Jirak (2012) <doi:10.1214/11-AOS963> band, a robust PACF), plus
+    McMillan-degree estimators (Bauer's (2001)
+    <doi:10.1016/S0005-1098(01)00118-2> SVC on past-future canonical
+    correlations, Hankel singular-value thresholding, a sequential rank
+    test), ARMA identification (extended sample autocorrelation function,
+    Hannan-Rissanen), and the order of integration by sequential unit-root
+    testing. All statistics run in a dependency-free Rust core.
+License: MIT + file LICENSE
+URL: https://castlaboratory.github.io/tsorder/r/, https://github.com/castlaboratory/tsorder
+BugReports: https://github.com/castlaboratory/tsorder/issues
+Encoding: UTF-8
+Language: en-GB
+Depends:
+    R (>= 4.2)
+Imports:
+    cli (>= 3.6.0),
+    ggplot2 (>= 3.5.0),
+    rlang (>= 1.1.0),
+    tibble (>= 3.2.0)
+Suggests:
+    forecast,
+    knitr,
+    rmarkdown,
+    robustbase,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+SystemRequirements: Cargo (Rust's package manager), rustc (>= 1.81)
+Config/rextendr/version: 0.5.0
+Config/roxygen2/version: 8.0.0

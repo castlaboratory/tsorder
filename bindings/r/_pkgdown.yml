@@ -1,0 +1,38 @@
+url: https://castlaboratory.github.io/tsorder/r/
+
+template:
+  bootstrap: 5
+  light-switch: true
+  bslib:
+    primary: "#7c5cff"
+    base_font: {google: "Source Sans 3"}
+    heading_font: {google: "Source Sans 3"}
+    code_font: {google: "JetBrains Mono"}
+
+development:
+  mode: auto
+
+authors:
+  André Leite:
+    href: https://castlab.org
+  Raydonal Ospina:
+    href: https://castlab.org
+  Cristiano Ferraz:
+    href: https://castlab.org
+
+navbar:
+  structure:
+    left:  [intro, reference, news]
+    right: [search, lightswitch, github]
+
+reference:
+- title: Select an order
+  contents: [order_select, autoplot.tsorder_fit]
+- title: Information criteria and threshold estimators
+  contents: [ic_order, fh_order]
+- title: McMillan degree (state dimension)
+  contents: [svc_order, hankel_rank_order, hankel_svt_order]
+- title: ARMA (p, q) and integration
+  contents: [eacf, hannan_rissanen, integration_order]
+- title: Robust building blocks
+  contents: [qn, robust_acf]

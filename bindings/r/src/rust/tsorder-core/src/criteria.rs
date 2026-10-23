@@ -1,0 +1,261 @@
+//! Classical information criteria over nested AR fits.
+//!
+//! Innovation variances come from the Yule–Walker/Levinson recursion
+//! (same convention as R's `ar.yw`), so every order is costed in one `O(K²)`
+//! pass. An OLS-conditional variant is planned so that the
+//! comparison with the OLS-based Fine–Hwang statistic is apples-to-apples.
+
+use crate::levinson::{burg_from_series, levinson_from_series};
+use crate::linalg::SquareMatrix;
+use crate::{check_input, Error, Result};
+
+/// Penalised-likelihood criteria (all "smaller is better").
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Criterion {
+    /// Akaike (1973): `n log σ̂² + 2k`. Not consistent; prediction-efficient (Shibata 1980).
+    Aic,
+    /// Hurvich & Tsai (1989) small-sample correction: `AIC + 2K(K+1)/(n-K-1)` with
+    /// `K = k + 1` free parameters (the `k` AR coefficients **plus the innovation variance**),
+    /// the convention of `forecast::Arima` without constant (D-14). The series is demeaned
+    /// before fitting but the mean is not counted (same as R's `ar()`).
+    Aicc,
+    /// Schwarz (1978): `n log σ̂² + k log n`. Strongly consistent (Hannan 1980).
+    Bic,
+    /// Hannan & Quinn (1979): `n log σ̂² + 2 c k log log n`, `c = 1` here. Minimal consistent penalty.
+    Hq,
+    /// Akaike (1969) final prediction error: `σ̂² (n+k)/(n-k)`. Not consistent.
+    Fpe,
+    /// Parzen (1974, 1977) criterion autoregressive transfer function:
+    /// `CAT(k) = (1/n) Σ_{j=1..k} 1/σ̄²_j − 1/σ̄²_k` with the unbiased-adjusted
+    /// *relative* variances `σ̄²_j = n (σ̂²_j/σ̂²_0) / (n − j)` (innovation variance
+    /// divided by the sample variance, as in the ACF-based recursion Parzen uses),
+    /// and `CAT(0) = −(1 + 1/n)`. The normalisation makes the value dimensionless
+    /// and the argmin scale-invariant. Asymptotically equivalent to AIC; not consistent.
+    Cat,
+    /// Rissanen (1978) two-part minimum description length:
+    /// `(n/2) log σ̂² + (k/2) log n`. In this AR form every value is exactly
+    /// `BIC/2`, so the argmin coincides with BIC's; included so the benchmark
+    /// can report it under its own name.
+    Mdl,
+}
+
+impl Criterion {
+    pub const ALL: [Criterion; 7] = [
+        Criterion::Aic,
+        Criterion::Aicc,
+        Criterion::Bic,
+        Criterion::Hq,
+        Criterion::Fpe,
+        Criterion::Cat,
+        Criterion::Mdl,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Criterion::Aic => "AIC",
+            Criterion::Aicc => "AICc",
+            Criterion::Bic => "BIC",
+            Criterion::Hq => "HQ",
+            Criterion::Fpe => "FPE",
+            Criterion::Cat => "CAT",
+            Criterion::Mdl => "MDL",
+        }
+    }
+
+    /// Number of free parameters counted by the penalty for an AR(`k`) fit: the `k`
+    /// coefficients plus the innovation variance. For AIC/BIC/HQ the variance term is a
+    /// constant shift that does not affect the argmin, so they use `k` directly as in the
+    /// textbook formulas; AICc's correction is nonlinear in `K`, so there it matters (D-14).
+    pub fn n_params(k: usize) -> usize {
+        k + 1
+    }
+
+    /// Criterion value for an AR(`k`) fit on `n` observations. `sigma2[j]` must hold the
+    /// innovation variance of the AR(`j`) fit for `j = 0..=k`; every criterion except CAT
+    /// reads only `sigma2[k]`, but CAT accumulates over the whole nested path.
+    pub fn value(self, sigma2: &[f64], k: usize, n: usize) -> f64 {
+        let nf = n as f64;
+        let kf = k as f64;
+        let s2 = sigma2[k];
+        let ll = nf * s2.ln();
+        match self {
+            Criterion::Aic => ll + 2.0 * kf,
+            Criterion::Aicc => {
+                let kp = Self::n_params(k) as f64;
+                ll + 2.0 * kp + 2.0 * kp * (kp + 1.0) / (nf - kp - 1.0).max(1.0)
+            }
+            Criterion::Bic => ll + kf * nf.ln(),
+            Criterion::Hq => ll + 2.0 * kf * nf.ln().ln().max(0.0),
+            Criterion::Fpe => s2 * (nf + kf) / (nf - kf).max(1.0),
+            Criterion::Cat => {
+                if k == 0 {
+                    return -(1.0 + 1.0 / nf);
+                }
+                // 1/σ̄²_j with σ̄²_j = n (σ̂²_j/σ̂²_0) / (n − j).
+                let inv_bar = |j: usize| (nf - j as f64) * sigma2[0] / (nf * sigma2[j]);
+                (1..=k).map(inv_bar).sum::<f64>() / nf - inv_bar(k)
+            }
+            Criterion::Mdl => 0.5 * (ll + kf * nf.ln()),
+        }
+    }
+}
+
+/// How the innovation variances of the nested AR fits are estimated.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum IcMethod {
+    /// Yule–Walker via one Levinson–Durbin recursion (the default; same
+    /// convention as R's `ar.yw`).
+    YuleWalker,
+    /// Conditional least squares on the common sample `t = max_order+1 ..= n`,
+    /// so every candidate order is fit to the same observations and the nested
+    /// residual variances `σ̂²_k = RSS_k / (n − max_order)` are directly
+    /// comparable — apples-to-apples with [`crate::Statistic::LongArOls`].
+    /// The criteria formulas still use the series length `n`.
+    Ols,
+    /// Burg (1967; Kay & Marple 1981): minimises forward plus backward
+    /// prediction error power; markedly better than Yule–Walker near the unit
+    /// circle.
+    Burg,
+}
+
+impl IcMethod {
+    pub const ALL: [IcMethod; 3] = [IcMethod::YuleWalker, IcMethod::Ols, IcMethod::Burg];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            IcMethod::YuleWalker => "yule_walker",
+            IcMethod::Ols => "ols",
+            IcMethod::Burg => "burg",
+        }
+    }
+}
+
+/// Result of [`ic_order`].
+#[derive(Debug, Clone)]
+pub struct IcResult {
+    pub criterion: Criterion,
+    /// How the innovation variances were estimated.
+    pub method: IcMethod,
+    /// Selected order (argmin of `values`).
+    pub order: usize,
+    /// Criterion value for each order `0..=max_order`.
+    pub values: Vec<f64>,
+    /// Innovation variance for each order `0..=max_order`.
+    pub sigma2: Vec<f64>,
+}
+
+/// Default maximum order used by R's `ar()`: `min(n-1, 10 log10 n)`.
+pub fn default_max_order(n: usize) -> usize {
+    let m = (10.0 * (n as f64).log10()).floor() as usize;
+    m.min(n.saturating_sub(1)).max(1)
+}
+
+/// Select an AR order by minimising `criterion` over `0..=max_order`, with
+/// Yule–Walker innovation variances. See [`ic_order_with`] for other methods.
+pub fn ic_order(x: &[f64], criterion: Criterion, max_order: Option<usize>) -> Result<IcResult> {
+    ic_order_with(x, criterion, IcMethod::YuleWalker, max_order)
+}
+
+/// Select an AR order by minimising `criterion` over `0..=max_order`, with the
+/// innovation variances of the nested fits estimated by `method`.
+pub fn ic_order_with(
+    x: &[f64],
+    criterion: Criterion,
+    method: IcMethod,
+    max_order: Option<usize>,
+) -> Result<IcResult> {
+    let n = x.len();
+    let k_max = max_order.unwrap_or_else(|| default_max_order(n));
+    let sigma2 = match method {
+        IcMethod::YuleWalker => levinson_from_series(x, k_max)?.sigma2,
+        IcMethod::Burg => burg_from_series(x, k_max)?.sigma2,
+        IcMethod::Ols => ols_sigma2_path(x, k_max)?,
+    };
+    let values: Vec<f64> = (0..sigma2.len())
+        .map(|k| criterion.value(&sigma2, k, n))
+        .collect();
+    let order = argmin(&values);
+    Ok(IcResult {
+        criterion,
+        method,
+        order,
+        values,
+        sigma2,
+    })
+}
+
+/// Residual variances of the nested conditional-OLS AR fits `k = 0..=k_max`,
+/// all on the common sample `t = k_max..n-1` (one Gram matrix, one Cholesky;
+/// each nested system is solved on the leading submatrix of the factor).
+fn ols_sigma2_path(x: &[f64], k_max: usize) -> Result<Vec<f64>> {
+    let n = x.len();
+    check_input(x, 2 * k_max + 2)?;
+    if k_max == 0 {
+        return Err(Error::Invalid("max_order must be >= 1"));
+    }
+    let mean = x.iter().sum::<f64>() / n as f64;
+    let xc: Vec<f64> = x.iter().map(|v| v - mean).collect();
+    let rows = n - k_max;
+    let mut gram = SquareMatrix::zeros(k_max);
+    let mut xty = vec![0.0; k_max];
+    let mut yy = 0.0;
+    for t in 0..rows {
+        let y = xc[k_max + t];
+        yy += y * y;
+        for i in 0..k_max {
+            let xi = xc[k_max + t - i - 1];
+            xty[i] += xi * y;
+            for j in 0..=i {
+                let v = gram.get(i, j) + xi * xc[k_max + t - j - 1];
+                gram.set(i, j, v);
+                gram.set(j, i, v);
+            }
+        }
+    }
+    if yy <= 0.0 {
+        return Err(Error::Singular);
+    }
+    let l = gram.cholesky()?;
+    let mut out = Vec::with_capacity(k_max + 1);
+    out.push(yy / rows as f64);
+    for k in 1..=k_max {
+        let beta = SquareMatrix::cholesky_solve_leading(&l, k, &xty);
+        let explained: f64 = beta.iter().zip(&xty).map(|(b, c)| b * c).sum();
+        // Guard against cancellation when the fit is near-perfect.
+        let rss = (yy - explained).max(f64::EPSILON * yy);
+        out.push(rss / rows as f64);
+    }
+    Ok(out)
+}
+
+/// All criteria in one pass (shares the Levinson recursion).
+pub fn ic_order_all(x: &[f64], max_order: Option<usize>) -> Result<Vec<IcResult>> {
+    let n = x.len();
+    let k_max = max_order.unwrap_or_else(|| default_max_order(n));
+    let l = levinson_from_series(x, k_max)?;
+    Ok(Criterion::ALL
+        .iter()
+        .map(|&c| {
+            let values: Vec<f64> = (0..l.sigma2.len())
+                .map(|k| c.value(&l.sigma2, k, n))
+                .collect();
+            IcResult {
+                criterion: c,
+                method: IcMethod::YuleWalker,
+                order: argmin(&values),
+                values,
+                sigma2: l.sigma2.clone(),
+            }
+        })
+        .collect())
+}
+
+pub(crate) fn argmin(v: &[f64]) -> usize {
+    let mut best = 0;
+    for (i, &x) in v.iter().enumerate() {
+        if x < v[best] {
+            best = i;
+        }
+    }
+    best
+}

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-23 — R package (M5, first half)
+- `bindings/r`: extendr-based R package `tsorder` — two-level API
+  (`order_select()` with print/autoplot over the low-level wrappers), the
+  five authors, MIT. R CMD check: 0 errors, 0 warnings, 1 note (extendr's
+  known non-API call). Cross-validated against R itself: Levinson PACF =
+  `stats::ar.yw` (1e-10), `qn()` = `robustbase::Qn` (1e-12), `eacf()` =
+  `TSA::eacf` digit for digit. pkgdown published under /r on the site;
+  the Rust core is vendored into the package by `tools/sync-core.sh`
+  (CI guards the copy).
+
 ## 2026-10-23 — benchmark round 1 (AR/MA)
 - `tsorder-bench`: TOML-driven runner (rayon, fixed per-triple seeds, lossless
   aggregated CSV output), designs and R analysis for Q1-Q3, Q5-Q7.

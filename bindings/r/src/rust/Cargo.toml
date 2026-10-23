@@ -1,0 +1,26 @@
+[package]
+name = "tsorder"
+publish = false
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81"
+
+# Not a member of the repository workspace: the R tooling builds this crate
+# on its own (and CRAN builds it from the vendored sources).
+[workspace]
+
+[lib]
+crate-type = ["rlib", "staticlib"]
+name = "tsorder"
+
+[[bin]]
+name = "document"
+path = "document.rs"
+
+[dependencies]
+extendr-api = "0.8"
+tsorder-core = { path = "tsorder-core" }
+
+[profile.release]
+lto = true
+codegen-units = 1
