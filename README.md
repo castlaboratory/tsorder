@@ -88,5 +88,5 @@ let e = ensemble_order(&x, &[
 
 ## License
 
-MIT. Authors: André Leite, Raydonal Ospina, Cristiano Ferraz, Hugo Vasconcelos
-and Diogo Bezerra (CASTLab/UFPE), with Claude. See `CITATION.cff` for how to cite.
+MIT. Authors: André Leite, Raydonal Ospina, Cristiano Ferraz, Hugo Vasconcelos,
+Diogo Bezerra (CASTLab/UFPE) and Paulo Renato Alves Firmino, with Claude. See `CITATION.cff` for how to cite.

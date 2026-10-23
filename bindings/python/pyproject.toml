@@ -15,6 +15,7 @@ authors = [
   { name = "Cristiano Ferraz", email = "cferraz@castlab.org" },
   { name = "Hugo Vasconcelos", email = "hugo.vasconcelos@ufpe.br" },
   { name = "Diogo Bezerra", email = "diogo.bezerra@ufpe.br" },
+  { name = "Paulo Renato Alves Firmino" },
 ]
 classifiers = [
   "Programming Language :: Rust",

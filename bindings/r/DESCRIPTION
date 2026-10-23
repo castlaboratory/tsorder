@@ -11,7 +11,9 @@ Authors@R: c(
     person("Hugo", "Vasconcelos", , "hugo.vasconcelos@ufpe.br", role = "aut",
            comment = c(ORCID = "0000-0001-6249-0920")),
     person("Diogo", "Bezerra", , "diogo.bezerra@ufpe.br", role = "aut",
-           comment = c(ORCID = "0000-0002-1216-8674"))
+           comment = c(ORCID = "0000-0002-1216-8674")),
+    person("Paulo Renato", "Alves Firmino", role = "aut",
+           comment = c(ORCID = "0000-0002-3308-2650"))
   )
 Description: Order selection for time series models: classical information
     criteria (AIC, AICc, BIC, HQ, FPE, CAT, MDL over Yule-Walker, Burg or
