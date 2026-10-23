@@ -135,7 +135,7 @@ fn adf_stat(x: &[f64]) -> Result<f64> {
     let dx: Vec<f64> = x.windows(2).map(|w| w[1] - w[0]).collect();
     let k = ic_order(&dx, Criterion::Bic, None)?.order;
     let start = k + 1; // Δx index offset
-    let rows = dx.len() - start + 0;
+    let rows = dx.len() - start;
     let cols = 2 + k;
     if rows <= cols + 2 {
         return Err(Error::TooShort {
