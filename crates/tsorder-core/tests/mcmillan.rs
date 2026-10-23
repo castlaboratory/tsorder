@@ -95,6 +95,51 @@ fn svc_white_noise_gives_zero_and_arma11_gives_one() {
 }
 
 #[test]
+fn hankel_svt_recovers_separated_systems() {
+    let mut ok = [0usize; 3];
+    for seed in 0..20 {
+        let wn = sim::arma(&[], &[], 2000, 300 + seed);
+        if hankel_svt_order(&wn, HankelSvtConfig::default())
+            .unwrap()
+            .order
+            == 0
+        {
+            ok[0] += 1;
+        }
+        let ar1 = sim::arma(&[0.9], &[], 4000, 400 + seed);
+        if hankel_svt_order(&ar1, HankelSvtConfig::default())
+            .unwrap()
+            .order
+            == 1
+        {
+            ok[1] += 1;
+        }
+        let b = bauer_example_i(2000, 500 + seed);
+        if hankel_svt_order(&b, HankelSvtConfig::default())
+            .unwrap()
+            .order
+            == 2
+        {
+            ok[2] += 1;
+        }
+    }
+    assert!(ok[0] >= 19, "white noise rank-0 rate {:?}", ok);
+    assert!(ok[1] >= 17, "AR(1) rate {:?}", ok);
+    assert!(ok[2] >= 19, "Bauer Example I rate {:?}", ok);
+}
+
+#[test]
+fn hankel_svt_is_invariant_to_shift_and_scale() {
+    let y = bauer_example_i(1500, 42);
+    let shifted: Vec<f64> = y.iter().map(|v| 3.0 * v + 50.0).collect();
+    let a = hankel_svt_order(&y, HankelSvtConfig::default()).unwrap();
+    let b = hankel_svt_order(&shifted, HankelSvtConfig::default()).unwrap();
+    // Singular values and xi both scale by 9; the order is unchanged.
+    assert_eq!(a.order, b.order);
+    assert!((9.0 * a.xi - b.xi).abs() < 1e-8 * b.xi);
+}
+
+#[test]
 fn svc_is_invariant_to_shift_and_scale() {
     let y = bauer_example_i(1500, 42);
     let shifted: Vec<f64> = y.iter().map(|v| 3.0 * v + 50.0).collect();

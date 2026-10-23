@@ -23,6 +23,7 @@
 pub mod acov;
 pub mod cancorr;
 pub mod criteria;
+pub mod hankel;
 pub mod levinson;
 pub mod linalg;
 pub mod robust;
@@ -37,6 +38,7 @@ pub use cancorr::{
     svc_order, Cancorr, SvcConfig, SvcPenalty, SvcResult,
 };
 pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
+pub use hankel::{hankel_svt_order, HankelSvtConfig, HankelSvtResult};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};
 pub use select::{
