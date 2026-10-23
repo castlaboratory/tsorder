@@ -140,6 +140,78 @@ fn hankel_svt_is_invariant_to_shift_and_scale() {
 }
 
 #[test]
+fn hankel_rank_test_recovers_and_is_calibrated() {
+    // Level under H0 with fixed alpha: rejection approaches nominal from
+    // below (the Robin-Smith finite-sample finding); recovery with the
+    // decaying level is near-perfect on separated systems.
+    let mut ok = [0usize; 3];
+    for seed in 0..15 {
+        let wn = sim::arma(&[], &[], 1500, 600 + seed);
+        if hankel_rank_order(&wn, HankelRankConfig::default())
+            .unwrap()
+            .order
+            == 0
+        {
+            ok[0] += 1;
+        }
+        let ar1 = sim::arma(&[0.9], &[], 1500, 700 + seed);
+        if hankel_rank_order(&ar1, HankelRankConfig::default())
+            .unwrap()
+            .order
+            == 1
+        {
+            ok[1] += 1;
+        }
+        let b = bauer_example_i(1500, 800 + seed);
+        if hankel_rank_order(&b, HankelRankConfig::default())
+            .unwrap()
+            .order
+            == 2
+        {
+            ok[2] += 1;
+        }
+    }
+    assert!(ok[0] >= 14, "white noise {:?}", ok);
+    assert!(ok[1] >= 13, "AR(1) {:?}", ok);
+    assert!(ok[2] >= 13, "Bauer I {:?}", ok);
+}
+
+#[test]
+fn eacf_identifies_arma_orders() {
+    let cases: [(&[f64], &[f64], (usize, usize)); 4] = [
+        (&[], &[], (0, 0)),
+        (&[1.2, -0.6], &[], (2, 0)),
+        (&[], &[0.6, 0.3], (0, 2)),
+        (&[0.5], &[0.5], (1, 1)),
+    ];
+    for (phi, theta, want) in cases {
+        let mut ok = 0;
+        for seed in 0..5 {
+            let x = sim::arma(phi, theta, 4000, 900 + seed);
+            if eacf(&x, EacfConfig::default()).unwrap().order == Some(want) {
+                ok += 1;
+            }
+        }
+        assert!(ok >= 4, "eacf {want:?}: {ok}/5");
+    }
+}
+
+#[test]
+fn hannan_rissanen_selects_and_estimates_arma11() {
+    let mut ok = 0;
+    for seed in 0..5 {
+        let x = sim::arma(&[0.5], &[0.8], 2000, 950 + seed);
+        let h = hannan_rissanen(&x, HrConfig::default()).unwrap();
+        if (h.p, h.q) == (1, 1) {
+            ok += 1;
+            assert!((h.phi[0] - 0.5).abs() < 0.15, "phi {:?}", h.phi);
+            assert!((h.theta[0] - 0.8).abs() < 0.15, "theta {:?}", h.theta);
+        }
+    }
+    assert!(ok >= 4, "HR correct {ok}/5");
+}
+
+#[test]
 fn svc_is_invariant_to_shift_and_scale() {
     let y = bauer_example_i(1500, 42);
     let shifted: Vec<f64> = y.iter().map(|v| 3.0 * v + 50.0).collect();

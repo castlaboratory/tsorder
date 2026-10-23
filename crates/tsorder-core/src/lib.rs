@@ -21,9 +21,11 @@
 //! `no_std`-friendly in spirit (they use `Vec` but nothing else from `std`).
 
 pub mod acov;
+pub mod arma;
 pub mod cancorr;
 pub mod criteria;
 pub mod dist;
+pub mod eacf;
 pub mod hankel;
 pub mod levinson;
 pub mod linalg;
@@ -34,12 +36,18 @@ pub mod sim;
 pub mod threshold;
 
 pub use acov::{acf, autocovariance};
+pub use arma::{hannan_rissanen, HrConfig, HrResult};
 pub use cancorr::{
     canonical_correlations, canonical_correlations_from_acov, canonical_correlations_stacked,
     svc_order, Cancorr, SvcConfig, SvcPenalty, SvcResult,
 };
 pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
-pub use hankel::{hankel_svt_order, HankelSvtConfig, HankelSvtResult};
+pub use dist::{chi2_sf, imhof_sf, satterthwaite_sf};
+pub use eacf::{eacf, EacfConfig, EacfResult};
+pub use hankel::{
+    hankel_rank_order, hankel_svt_order, HankelRankConfig, HankelRankResult, HankelSvtConfig,
+    HankelSvtResult, RankAlpha, RankPvalue,
+};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};
 pub use select::{
