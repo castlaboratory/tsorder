@@ -145,61 +145,6 @@ pub fn imhof_sf(q: f64, weights: &[f64]) -> f64 {
     (0.5 + total / std::f64::consts::PI).clamp(0.0, 1.0)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn chi2_sf_matches_r_pchisq() {
-        // R: pchisq(q, df, lower.tail = FALSE).
-        let cases = [
-            (3.84, 1.0, 0.050043521248705),
-            (5.99, 2.0, 0.0500366270865863),
-            (2.5, 1.7, 0.231036876696032),
-            (10.0, 4.3, 0.0494046995154264),
-            (0.5, 0.5, 0.256322055268539),
-        ];
-        for (q, df, want) in cases {
-            let got = chi2_sf(q, df);
-            assert!((got - want).abs() < 1e-12, "chi2_sf({q},{df}) = {got}");
-        }
-    }
-
-    #[test]
-    fn imhof_matches_exact_chi2_and_r_compquadform() {
-        // Single unit weight: exactly chi-square(1).
-        let got = imhof_sf(3.84, &[1.0]);
-        assert!((got - chi2_sf(3.84, 1.0)).abs() < 1e-6, "{got}");
-        // Equal weights 1,1: exactly chi-square(2).
-        let got = imhof_sf(5.99, &[1.0, 1.0]);
-        assert!((got - chi2_sf(5.99, 2.0)).abs() < 1e-6, "{got}");
-        // R CompQuadForm::imhof references (their own integration error ~1e-4).
-        let cases: [(f64, &[f64], f64); 4] = [
-            (5.0, &[2.0, 1.0], 0.186424873796),
-            (1.2, &[0.9, 0.5, 0.1], 0.449453666487),
-            (10.0, &[3.0, 2.0, 1.0, 0.5], 0.193055225569),
-            (0.3, &[0.2, 0.05], 0.279316877793),
-        ];
-        for (q, l, want) in cases {
-            let got = imhof_sf(q, l);
-            assert!((got - want).abs() < 5e-4, "imhof({q}) = {got} want {want}");
-        }
-    }
-
-    #[test]
-    fn satterthwaite_is_exact_for_equal_weights() {
-        // Equal weights: the two-moment fit is exact (g = λ, ν = k).
-        let got = satterthwaite_sf(5.99, &[1.0, 1.0]);
-        assert!((got - chi2_sf(5.99, 2.0)).abs() < 1e-12);
-        let got = satterthwaite_sf(3.0, &[0.5, 0.5, 0.5]);
-        assert!((got - chi2_sf(6.0, 3.0)).abs() < 1e-12);
-        // Unequal weights: close to Imhof but not equal.
-        let a = satterthwaite_sf(5.0, &[2.0, 1.0]);
-        let b = imhof_sf(5.0, &[2.0, 1.0]);
-        assert!((a - b).abs() < 0.02, "satt {a} vs imhof {b}");
-    }
-}
-
 /// Upper-tail quantile table of the asymptotic KPSS level-statistic null
 /// (integral of a squared Brownian bridge): pairs `(α, q)` with
 /// `P(KPSS > q) = α`. Simulated by `examples/unit_root_tables.rs`
@@ -263,4 +208,59 @@ pub fn kpss_critical(alpha: f64) -> f64 {
 /// t-statistic with constant (asymptotic null).
 pub fn df_tau_c_critical(alpha: f64) -> f64 {
     interp_table(&DF_TAU_C_TABLE, alpha)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chi2_sf_matches_r_pchisq() {
+        // R: pchisq(q, df, lower.tail = FALSE).
+        let cases = [
+            (3.84, 1.0, 0.050043521248705),
+            (5.99, 2.0, 0.0500366270865863),
+            (2.5, 1.7, 0.231036876696032),
+            (10.0, 4.3, 0.0494046995154264),
+            (0.5, 0.5, 0.256322055268539),
+        ];
+        for (q, df, want) in cases {
+            let got = chi2_sf(q, df);
+            assert!((got - want).abs() < 1e-12, "chi2_sf({q},{df}) = {got}");
+        }
+    }
+
+    #[test]
+    fn imhof_matches_exact_chi2_and_r_compquadform() {
+        // Single unit weight: exactly chi-square(1).
+        let got = imhof_sf(3.84, &[1.0]);
+        assert!((got - chi2_sf(3.84, 1.0)).abs() < 1e-6, "{got}");
+        // Equal weights 1,1: exactly chi-square(2).
+        let got = imhof_sf(5.99, &[1.0, 1.0]);
+        assert!((got - chi2_sf(5.99, 2.0)).abs() < 1e-6, "{got}");
+        // R CompQuadForm::imhof references (their own integration error ~1e-4).
+        let cases: [(f64, &[f64], f64); 4] = [
+            (5.0, &[2.0, 1.0], 0.186424873796),
+            (1.2, &[0.9, 0.5, 0.1], 0.449453666487),
+            (10.0, &[3.0, 2.0, 1.0, 0.5], 0.193055225569),
+            (0.3, &[0.2, 0.05], 0.279316877793),
+        ];
+        for (q, l, want) in cases {
+            let got = imhof_sf(q, l);
+            assert!((got - want).abs() < 5e-4, "imhof({q}) = {got} want {want}");
+        }
+    }
+
+    #[test]
+    fn satterthwaite_is_exact_for_equal_weights() {
+        // Equal weights: the two-moment fit is exact (g = λ, ν = k).
+        let got = satterthwaite_sf(5.99, &[1.0, 1.0]);
+        assert!((got - chi2_sf(5.99, 2.0)).abs() < 1e-12);
+        let got = satterthwaite_sf(3.0, &[0.5, 0.5, 0.5]);
+        assert!((got - chi2_sf(6.0, 3.0)).abs() < 1e-12);
+        // Unequal weights: close to Imhof but not equal.
+        let a = satterthwaite_sf(5.0, &[2.0, 1.0]);
+        let b = imhof_sf(5.0, &[2.0, 1.0]);
+        assert!((a - b).abs() < 0.02, "satt {a} vs imhof {b}");
+    }
 }
