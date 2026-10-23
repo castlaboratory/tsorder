@@ -23,6 +23,7 @@
 pub mod acov;
 pub mod cancorr;
 pub mod criteria;
+pub mod dist;
 pub mod hankel;
 pub mod levinson;
 pub mod linalg;
