@@ -32,16 +32,28 @@ pub enum Statistic {
     /// `se = 1/sqrt(n)` (white-noise asymptotics; the general null theory is
     /// Bhansali 1983).
     InversePacf,
+    /// Yule–Walker long-AR coefficients with the exact null studentization of
+    /// Jirak (2012, Thm 2.2): `se_i = sqrt(γ̂*_ii · σ̂²(p_n) / n)` where `γ̂*_ii`
+    /// is the diagonal of the inverse of the estimated autocovariance matrix
+    /// `Γ̂_{p_n}` and `σ̂²(p_n)` the Yule–Walker innovation variance, so each
+    /// `values[i]/se[i]` is asymptotically standard normal under the null.
+    /// Paired with [`Threshold::Gumbel`] this is Jirak's practically
+    /// recommended band (his Remark 2.6 calibrates the threshold by the max of
+    /// `p_n` i.i.d. |N(0,1)|, which is exactly that rule); with `alpha_n → 0`
+    /// it is his consistent estimator q̂⁽¹⁾. Upgrades [`Statistic::LongArYw`],
+    /// whose `1/sqrt(n)` ignores the correlation structure.
+    JirakBand,
 }
 
 impl Statistic {
-    pub const ALL: [Statistic; 6] = [
+    pub const ALL: [Statistic; 7] = [
         Statistic::Pacf,
         Statistic::LongArYw,
         Statistic::LongArOls,
         Statistic::Acf,
         Statistic::AcfBartlett,
         Statistic::InversePacf,
+        Statistic::JirakBand,
     ];
 
     pub fn name(self) -> &'static str {
@@ -52,13 +64,16 @@ impl Statistic {
             Statistic::Acf => "acf",
             Statistic::AcfBartlett => "acf_bartlett",
             Statistic::InversePacf => "inverse_pacf",
+            Statistic::JirakBand => "jirak_band",
         }
     }
 
     /// Which model family's order this statistic targets.
     pub fn target(self) -> &'static str {
         match self {
-            Statistic::Pacf | Statistic::LongArYw | Statistic::LongArOls => "AR",
+            Statistic::Pacf | Statistic::LongArYw | Statistic::LongArOls | Statistic::JirakBand => {
+                "AR"
+            }
             Statistic::Acf | Statistic::AcfBartlett | Statistic::InversePacf => "MA",
         }
     }
@@ -113,6 +128,23 @@ impl Statistic {
                 let vi = crate::acov::inverse_acov_from_ar(&l.phi_last);
                 let li = levinson(&vi)?;
                 Ok((li.pacf, root_n_se))
+            }
+            Statistic::JirakBand => {
+                let r = autocovariance(x, p_n)?;
+                let l = levinson(&r)?;
+                // Diagonal of the inverse of the Toeplitz Γ̂_{p_n}.
+                let mut g = crate::linalg::SquareMatrix::zeros(p_n);
+                for i in 0..p_n {
+                    for j in 0..p_n {
+                        g.set(i, j, r[i.abs_diff(j)]);
+                    }
+                }
+                let ch = g.cholesky()?;
+                let diag = crate::linalg::SquareMatrix::cholesky_inverse_diag(&ch);
+                let sigma2 = l.sigma2[p_n];
+                let nf = n as f64;
+                let se = diag.iter().map(|d| (d * sigma2 / nf).sqrt()).collect();
+                Ok((l.phi_last, se))
             }
         }
     }

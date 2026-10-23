@@ -257,24 +257,54 @@ fn cat_and_mdl_recover_ar2_and_mdl_matches_bic() {
 
 #[test]
 fn gumbel_level_is_controlled_on_white_noise() {
-    // Family-wise overestimation on white noise at alpha = 0.05 should be ≈ 5 % (loose check).
-    let mut over = 0;
-    let reps = 400;
-    for seed in 0..reps {
-        let x = sim_arma(&[], &[], 1000, 1000 + seed as u64);
-        let r = fh_order(
-            &x,
-            FhConfig {
-                threshold: Threshold::Gumbel { alpha: 0.05 },
-                memory: Some(polylog_memory(1000, 2.0)),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        if r.order > 0 {
-            over += 1;
+    // Family-wise overestimation on white noise at alpha = 0.05 should be ≈ 5 %
+    // (loose check), both for the self-studentized PACF and for the Jirak band.
+    for stat in [Statistic::Pacf, Statistic::JirakBand] {
+        let mut over = 0;
+        let reps = 400;
+        for seed in 0..reps {
+            let x = sim_arma(&[], &[], 1000, 1000 + seed as u64);
+            let r = fh_order(
+                &x,
+                FhConfig {
+                    statistic: stat,
+                    threshold: Threshold::Gumbel { alpha: 0.05 },
+                    memory: Some(polylog_memory(1000, 2.0)),
+                },
+            )
+            .unwrap();
+            if r.order > 0 {
+                over += 1;
+            }
         }
+        let rate = over as f64 / reps as f64;
+        assert!(rate < 0.12, "{}: overestimation rate {rate}", stat.name());
     }
-    let rate = over as f64 / reps as f64;
-    assert!(rate < 0.12, "overestimation rate {rate}");
+}
+
+#[test]
+fn jirak_band_recovers_ar2_and_sparse_support() {
+    let x = sim_arma(&[1.2, -0.6], &[], 4000, 42);
+    let r = fh_order(
+        &x,
+        FhConfig {
+            statistic: Statistic::JirakBand,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(r.order, 2, "JirakBand gave {}", r.order);
+    // Jirak's selling point: on sparse AR the band reads the support directly.
+    let s = sim_arma(&[0.5, 0.0, 0.0, 0.3], &[], 8000, 7);
+    let rs = fh_order(
+        &s,
+        FhConfig {
+            statistic: Statistic::JirakBand,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(rs.order, 4);
+    let support: Vec<bool> = rs.studentized.iter().map(|t| t.abs() > rs.tau).collect();
+    assert_eq!(&support[..4], &[true, false, false, true]);
 }
