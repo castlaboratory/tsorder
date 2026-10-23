@@ -21,6 +21,7 @@
 //! `no_std`-friendly in spirit (they use `Vec` but nothing else from `std`).
 
 pub mod acov;
+pub mod cancorr;
 pub mod criteria;
 pub mod levinson;
 pub mod linalg;
@@ -31,6 +32,7 @@ pub mod sim;
 pub mod threshold;
 
 pub use acov::{acf, autocovariance};
+pub use cancorr::{canonical_correlations, canonical_correlations_from_acov, Cancorr};
 pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};

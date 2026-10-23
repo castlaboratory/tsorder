@@ -96,6 +96,68 @@ impl SquareMatrix {
     }
 }
 
+/// Singular values of a dense `rows × cols` matrix (row-major), descending,
+/// by one-sided Jacobi: pairwise orthogonalisation of the columns until every
+/// pair is numerically orthogonal; the singular values are then the column
+/// norms. `O(sweeps · cols² · rows)` with a handful of sweeps — fine for the
+/// `K × K` matrices of the canonical-correlation step (`K ≤ ~50`, D-03).
+pub fn singular_values(a: &[f64], rows: usize, cols: usize) -> Vec<f64> {
+    debug_assert_eq!(a.len(), rows * cols);
+    // Column-major working copy.
+    let mut u: Vec<f64> = Vec::with_capacity(rows * cols);
+    for j in 0..cols {
+        for i in 0..rows {
+            u.push(a[i * cols + j]);
+        }
+    }
+    let col = |u: &Vec<f64>, j: usize| -> std::ops::Range<usize> { j * rows..(j + 1) * rows };
+    let tol = 1e-14;
+    for _sweep in 0..60 {
+        let mut rotated = false;
+        for i in 0..cols {
+            for j in i + 1..cols {
+                let (mut aii, mut ajj, mut aij) = (0.0f64, 0.0f64, 0.0f64);
+                for t in 0..rows {
+                    let ui = u[col(&u, i).start + t];
+                    let uj = u[col(&u, j).start + t];
+                    aii += ui * ui;
+                    ajj += uj * uj;
+                    aij += ui * uj;
+                }
+                if aij.abs() <= tol * (aii * ajj).sqrt() || aii == 0.0 || ajj == 0.0 {
+                    continue;
+                }
+                rotated = true;
+                // Jacobi rotation that zeroes the off-diagonal of the 2×2 Gram block.
+                let zeta = (ajj - aii) / (2.0 * aij);
+                let t_ = zeta.signum() / (zeta.abs() + (1.0 + zeta * zeta).sqrt());
+                let c = 1.0 / (1.0 + t_ * t_).sqrt();
+                let s = c * t_;
+                for t in 0..rows {
+                    let ii = i * rows + t;
+                    let jj = j * rows + t;
+                    let (ui, uj) = (u[ii], u[jj]);
+                    u[ii] = c * ui - s * uj;
+                    u[jj] = s * ui + c * uj;
+                }
+            }
+        }
+        if !rotated {
+            break;
+        }
+    }
+    let mut sv: Vec<f64> = (0..cols)
+        .map(|j| {
+            (0..rows)
+                .map(|t| u[j * rows + t].powi(2))
+                .sum::<f64>()
+                .sqrt()
+        })
+        .collect();
+    sv.sort_unstable_by(|a, b| b.total_cmp(a));
+    sv
+}
+
 /// OLS fit of `y` on the columns of `X` (row-major `rows × cols`).
 /// Returns `(beta, residual_variance, se)` with `se` the classical standard errors
 /// `sqrt(σ̂² (XᵀX)⁻¹_jj)` and `σ̂² = RSS / (rows - cols)`.
@@ -136,6 +198,30 @@ pub fn ols(x: &[f64], rows: usize, cols: usize, y: &[f64]) -> Result<(Vec<f64>, 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn singular_values_known_cases() {
+        // Diagonal.
+        let d = [3.0, 0.0, 0.0, 2.0];
+        let sv = singular_values(&d, 2, 2);
+        assert!((sv[0] - 3.0).abs() < 1e-12 && (sv[1] - 2.0).abs() < 1e-12);
+        // 2x2 with known SVD: [[1,1],[0,1]] has sv sqrt((3±sqrt(5))/2).
+        let a = [1.0, 1.0, 0.0, 1.0];
+        let sv = singular_values(&a, 2, 2);
+        let s1 = ((3.0 + 5.0f64.sqrt()) / 2.0).sqrt();
+        let s2 = ((3.0 - 5.0f64.sqrt()) / 2.0).sqrt();
+        assert!((sv[0] - s1).abs() < 1e-12, "{sv:?}");
+        assert!((sv[1] - s2).abs() < 1e-12);
+        // Rectangular 3x2: Frobenius norm and product (via Gram determinant) match.
+        let b = [1.0, 2.0, -1.0, 0.5, 3.0, 1.0];
+        let sv = singular_values(&b, 3, 2);
+        let fro: f64 = b.iter().map(|v| v * v).sum();
+        assert!((sv.iter().map(|v| v * v).sum::<f64>() - fro).abs() < 1e-10);
+        // det(BᵀB) = (σ1 σ2)².
+        let (g00, g01, g11) = (1.0f64 + 1.0 + 9.0, 2.0 - 0.5 + 3.0, 4.0f64 + 0.25 + 1.0);
+        let det = g00 * g11 - g01 * g01;
+        assert!(((sv[0] * sv[1]).powi(2) - det).abs() < 1e-9);
+    }
 
     #[test]
     fn cholesky_solve_2x2() {
