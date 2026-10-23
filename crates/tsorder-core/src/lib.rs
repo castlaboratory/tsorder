@@ -28,8 +28,8 @@ pub mod select;
 pub mod threshold;
 
 pub use acov::{acf, autocovariance};
-pub use criteria::{ic_order, Criterion, IcResult};
-pub use levinson::{levinson, Levinson};
+pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
+pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use select::{
     ensemble_order, fh_order, EnsembleResult, EnsembleRule, FhConfig, FhResult, Statistic,
 };

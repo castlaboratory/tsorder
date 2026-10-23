@@ -5,8 +5,9 @@
 //! pass. An OLS-conditional variant is planned so that the
 //! comparison with the OLS-based Fine–Hwang statistic is apples-to-apples.
 
-use crate::levinson::levinson_from_series;
-use crate::Result;
+use crate::levinson::{burg_from_series, levinson_from_series};
+use crate::linalg::SquareMatrix;
+use crate::{check_input, Error, Result};
 
 /// Penalised-likelihood criteria (all "smaller is better").
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -99,10 +100,42 @@ impl Criterion {
     }
 }
 
+/// How the innovation variances of the nested AR fits are estimated.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum IcMethod {
+    /// Yule–Walker via one Levinson–Durbin recursion (the default; same
+    /// convention as R's `ar.yw`).
+    YuleWalker,
+    /// Conditional least squares on the common sample `t = max_order+1 ..= n`,
+    /// so every candidate order is fit to the same observations and the nested
+    /// residual variances `σ̂²_k = RSS_k / (n − max_order)` are directly
+    /// comparable — apples-to-apples with [`crate::Statistic::LongArOls`].
+    /// The criteria formulas still use the series length `n`.
+    Ols,
+    /// Burg (1967; Kay & Marple 1981): minimises forward plus backward
+    /// prediction error power; markedly better than Yule–Walker near the unit
+    /// circle.
+    Burg,
+}
+
+impl IcMethod {
+    pub const ALL: [IcMethod; 3] = [IcMethod::YuleWalker, IcMethod::Ols, IcMethod::Burg];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            IcMethod::YuleWalker => "yule_walker",
+            IcMethod::Ols => "ols",
+            IcMethod::Burg => "burg",
+        }
+    }
+}
+
 /// Result of [`ic_order`].
 #[derive(Debug, Clone)]
 pub struct IcResult {
     pub criterion: Criterion,
+    /// How the innovation variances were estimated.
+    pub method: IcMethod,
     /// Selected order (argmin of `values`).
     pub order: usize,
     /// Criterion value for each order `0..=max_order`.
@@ -117,21 +150,82 @@ pub fn default_max_order(n: usize) -> usize {
     m.min(n.saturating_sub(1)).max(1)
 }
 
-/// Select an AR order by minimising `criterion` over `0..=max_order`.
+/// Select an AR order by minimising `criterion` over `0..=max_order`, with
+/// Yule–Walker innovation variances. See [`ic_order_with`] for other methods.
 pub fn ic_order(x: &[f64], criterion: Criterion, max_order: Option<usize>) -> Result<IcResult> {
+    ic_order_with(x, criterion, IcMethod::YuleWalker, max_order)
+}
+
+/// Select an AR order by minimising `criterion` over `0..=max_order`, with the
+/// innovation variances of the nested fits estimated by `method`.
+pub fn ic_order_with(
+    x: &[f64],
+    criterion: Criterion,
+    method: IcMethod,
+    max_order: Option<usize>,
+) -> Result<IcResult> {
     let n = x.len();
     let k_max = max_order.unwrap_or_else(|| default_max_order(n));
-    let l = levinson_from_series(x, k_max)?;
-    let values: Vec<f64> = (0..l.sigma2.len())
-        .map(|k| criterion.value(&l.sigma2, k, n))
+    let sigma2 = match method {
+        IcMethod::YuleWalker => levinson_from_series(x, k_max)?.sigma2,
+        IcMethod::Burg => burg_from_series(x, k_max)?.sigma2,
+        IcMethod::Ols => ols_sigma2_path(x, k_max)?,
+    };
+    let values: Vec<f64> = (0..sigma2.len())
+        .map(|k| criterion.value(&sigma2, k, n))
         .collect();
     let order = argmin(&values);
     Ok(IcResult {
         criterion,
+        method,
         order,
         values,
-        sigma2: l.sigma2,
+        sigma2,
     })
+}
+
+/// Residual variances of the nested conditional-OLS AR fits `k = 0..=k_max`,
+/// all on the common sample `t = k_max..n-1` (one Gram matrix, one Cholesky;
+/// each nested system is solved on the leading submatrix of the factor).
+fn ols_sigma2_path(x: &[f64], k_max: usize) -> Result<Vec<f64>> {
+    let n = x.len();
+    check_input(x, 2 * k_max + 2)?;
+    if k_max == 0 {
+        return Err(Error::Invalid("max_order must be >= 1"));
+    }
+    let mean = x.iter().sum::<f64>() / n as f64;
+    let xc: Vec<f64> = x.iter().map(|v| v - mean).collect();
+    let rows = n - k_max;
+    let mut gram = SquareMatrix::zeros(k_max);
+    let mut xty = vec![0.0; k_max];
+    let mut yy = 0.0;
+    for t in 0..rows {
+        let y = xc[k_max + t];
+        yy += y * y;
+        for i in 0..k_max {
+            let xi = xc[k_max + t - i - 1];
+            xty[i] += xi * y;
+            for j in 0..=i {
+                let v = gram.get(i, j) + xi * xc[k_max + t - j - 1];
+                gram.set(i, j, v);
+                gram.set(j, i, v);
+            }
+        }
+    }
+    if yy <= 0.0 {
+        return Err(Error::Singular);
+    }
+    let l = gram.cholesky()?;
+    let mut out = Vec::with_capacity(k_max + 1);
+    out.push(yy / rows as f64);
+    for k in 1..=k_max {
+        let beta = SquareMatrix::cholesky_solve_leading(&l, k, &xty);
+        let explained: f64 = beta.iter().zip(&xty).map(|(b, c)| b * c).sum();
+        // Guard against cancellation when the fit is near-perfect.
+        let rss = (yy - explained).max(f64::EPSILON * yy);
+        out.push(rss / rows as f64);
+    }
+    Ok(out)
 }
 
 /// All criteria in one pass (shares the Levinson recursion).
@@ -147,6 +241,7 @@ pub fn ic_order_all(x: &[f64], max_order: Option<usize>) -> Result<Vec<IcResult>
                 .collect();
             IcResult {
                 criterion: c,
+                method: IcMethod::YuleWalker,
                 order: argmin(&values),
                 values,
                 sigma2: l.sigma2.clone(),

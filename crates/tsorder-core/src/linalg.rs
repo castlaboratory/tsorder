@@ -50,22 +50,30 @@ impl SquareMatrix {
     }
 
     /// Solve `A x = b` given the Cholesky factor `L` of `A`.
-    #[allow(clippy::needless_range_loop)] // index form mirrors the textbook recursion
     pub fn cholesky_solve(l: &SquareMatrix, b: &[f64]) -> Vec<f64> {
-        let n = l.n;
-        let mut y = vec![0.0; n];
-        for i in 0..n {
+        Self::cholesky_solve_leading(l, l.n, b)
+    }
+
+    /// Solve the leading `k × k` subsystem `A[..k, ..k] x = b` given the Cholesky
+    /// factor `L` of the full matrix. Valid because the Cholesky factor of a
+    /// leading principal submatrix is the leading submatrix of the factor, which
+    /// lets one `O(n³)` factorisation serve every nested model.
+    #[allow(clippy::needless_range_loop)] // index form mirrors the textbook recursion
+    pub fn cholesky_solve_leading(l: &SquareMatrix, k: usize, b: &[f64]) -> Vec<f64> {
+        debug_assert!(k <= l.n && b.len() >= k);
+        let mut y = vec![0.0; k];
+        for i in 0..k {
             let mut s = b[i];
-            for k in 0..i {
-                s -= l.get(i, k) * y[k];
+            for j in 0..i {
+                s -= l.get(i, j) * y[j];
             }
             y[i] = s / l.get(i, i);
         }
-        let mut x = vec![0.0; n];
-        for i in (0..n).rev() {
+        let mut x = vec![0.0; k];
+        for i in (0..k).rev() {
             let mut s = y[i];
-            for k in i + 1..n {
-                s -= l.get(k, i) * x[k];
+            for j in i + 1..k {
+                s -= l.get(j, i) * x[j];
             }
             x[i] = s / l.get(i, i);
         }

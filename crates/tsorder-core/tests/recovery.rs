@@ -126,6 +126,30 @@ fn all_criteria_run() {
 }
 
 #[test]
+fn ar2_recovered_by_all_ic_methods_and_wn_gives_zero() {
+    let x = sim_arma(&[1.2, -0.6], &[], 4000, 42);
+    let wn = sim_arma(&[], &[], 2000, 3);
+    for m in IcMethod::ALL {
+        let r = ic_order_with(&x, Criterion::Bic, m, None).unwrap();
+        assert_eq!(r.order, 2, "{} gave {}", m.name(), r.order);
+        let z = ic_order_with(&wn, Criterion::Bic, m, None).unwrap();
+        assert_eq!(z.order, 0, "{} gave {} on white noise", m.name(), z.order);
+    }
+}
+
+#[test]
+fn burg_matches_yule_walker_on_long_series() {
+    // Burg and YW are asymptotically equivalent away from the unit circle: on a
+    // long AR(2) the PACF estimates should agree to a few decimal places.
+    let x = sim_arma(&[1.2, -0.6], &[], 8000, 21);
+    let yw = levinson_from_series(&x, 6).unwrap();
+    let bg = burg_from_series(&x, 6).unwrap();
+    for (a, b) in yw.pacf.iter().zip(&bg.pacf) {
+        assert!((a - b).abs() < 0.02, "yw {a} vs burg {b}");
+    }
+}
+
+#[test]
 fn errors_are_reported() {
     assert!(matches!(
         fh_order(&[1.0, 2.0, 3.0], FhConfig::default()),
@@ -167,14 +191,17 @@ fn all_statistics_invariant_to_shift_and_scale() {
             }
         }
         for c in Criterion::ALL {
-            let a = ic_order(base, c, Some(15)).unwrap();
-            let b = ic_order(&shifted, c, Some(15)).unwrap();
-            assert_eq!(
-                a.order,
-                b.order,
-                "{} changed order under affine map",
-                c.name()
-            );
+            for m in IcMethod::ALL {
+                let a = ic_order_with(base, c, m, Some(15)).unwrap();
+                let b = ic_order_with(&shifted, c, m, Some(15)).unwrap();
+                assert_eq!(
+                    a.order,
+                    b.order,
+                    "{} ({}) changed order under affine map",
+                    c.name(),
+                    m.name()
+                );
+            }
         }
     }
 }
