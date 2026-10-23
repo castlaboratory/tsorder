@@ -32,5 +32,6 @@ jobs:
         working-directory: bindings/python
         run: |
           pip install maturin pytest numpy
-          maturin develop --release
+          maturin build --release --out dist
+          pip install dist/*.whl
           pytest tests/ -q
