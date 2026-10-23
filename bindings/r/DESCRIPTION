@@ -41,6 +41,7 @@ Suggests:
     forecast,
     knitr,
     rmarkdown,
+    jsonlite,
     robustbase,
     testthat (>= 3.0.0),
     TSA

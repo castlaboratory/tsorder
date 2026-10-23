@@ -203,7 +203,8 @@ pub struct SvcConfig {
     /// Window `f = p`; `None` → `⌊window_factor · p̂_AIC⌋` with `p̂_AIC` the
     /// AIC order of a long autoregression (Bauer §5), clamped to `≥ 2`.
     pub window: Option<usize>,
-    /// Bauer's `d`; he recommends `1 ≤ d ≤ 2`.
+    /// Bauer's `d`; he recommends `1 ≤ d ≤ 2`, and the benchmark's Q4 round
+    /// found `d = 1` dominating every DGP tried, so it is the default.
     pub window_factor: f64,
     pub penalty: SvcPenalty,
 }
@@ -212,7 +213,7 @@ impl Default for SvcConfig {
     fn default() -> Self {
         SvcConfig {
             window: None,
-            window_factor: 2.0,
+            window_factor: 1.0,
             penalty: SvcPenalty::LogT,
         }
     }

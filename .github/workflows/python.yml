@@ -1,0 +1,36 @@
+name: python-package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bindings/python/**"
+      - "crates/tsorder-core/**"
+      - ".github/workflows/python.yml"
+  pull_request:
+    paths:
+      - "bindings/python/**"
+      - "crates/tsorder-core/**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and test
+        working-directory: bindings/python
+        run: |
+          pip install maturin pytest numpy
+          maturin develop --release
+          pytest tests/ -q

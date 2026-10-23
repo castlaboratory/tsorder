@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "tsorder"
+version = "0.1.0"
+description = "Order selection for time series models: information criteria, Fine-Hwang threshold estimators, McMillan-degree estimators, ARMA identification and integration order, in a dependency-free Rust core"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+  { name = "André Leite", email = "leite@castlab.org" },
+  { name = "Raydonal Ospina", email = "raydonal@castlab.org" },
+  { name = "Cristiano Ferraz", email = "cferraz@castlab.org" },
+  { name = "Hugo Vasconcelos", email = "hugo.vasconcelos@ufpe.br" },
+  { name = "Diogo Bezerra", email = "diogo.bezerra@ufpe.br" },
+]
+classifiers = [
+  "Programming Language :: Rust",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+[project.urls]
+Homepage = "https://castlaboratory.github.io/tsorder/"
+Repository = "https://github.com/castlaboratory/tsorder"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

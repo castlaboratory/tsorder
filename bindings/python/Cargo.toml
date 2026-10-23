@@ -1,0 +1,17 @@
+[package]
+name = "tsorder-py"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81"
+publish = false
+
+# Built by maturin, not as a member of the repository workspace.
+[workspace]
+
+[lib]
+name = "tsorder"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.26", features = ["abi3-py39"] }
+tsorder-core = { path = "../../crates/tsorder-core" }
