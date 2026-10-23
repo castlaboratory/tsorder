@@ -1,0 +1,103 @@
+# Q4 — McMillan degree: level under H0 and accuracy for the three routes
+# (SVC with both penalties and both windows, the CK comparators cc-AIC/cc-BIC
+# and Bartlett sequential, the Robin-Smith rank test, the SVT cut) plus the
+# genuine mode-by-consensus (MbC). Feeds T-5 and settles D-26.
+
+[run]
+name = "q4"
+out = "benchmark/results/q4"
+n = [100, 200, 400, 800, 1600, 3200, 10000]
+replications = 2000
+replications_large = 1000
+large_from = 3200
+
+[[dgp]]
+name = "wn"
+true_order = 0
+
+[[dgp]]
+name = "ar1_09"
+phi = [0.9]
+true_order = 1
+
+[[dgp]]
+name = "ma1_05"
+theta = [0.5]
+true_order = 1
+
+[[dgp]]
+name = "arma11"
+phi = [0.5]
+theta = [0.5]
+true_order = 1
+
+[[dgp]]
+name = "ar2_strong"
+phi = [1.2, -0.6]
+true_order = 2
+
+[[dgp]]
+name = "ma2"
+theta = [0.6, 0.3]
+true_order = 2
+
+# Bauer (2001) Example I in ARMA form: poles z^2-0.5z+0.7, zeros z^2+0.8z+0.35.
+[[dgp]]
+name = "bauer_i"
+phi = [0.5, -0.7]
+theta = [0.8, 0.35]
+true_order = 2
+
+[[dgp]]
+name = "arma22"
+phi = [0.5, 0.3]
+theta = [0.6, 0.3]
+true_order = 2
+
+[[estimator]]
+name = "svc_logt_d1"
+kind = "svc"
+penalty = "logt"
+window_factor = 1.0
+
+[[estimator]]
+name = "svc_logt_d2"
+kind = "svc"
+penalty = "logt"
+window_factor = 2.0
+
+[[estimator]]
+name = "svc_fplogt_d2"
+kind = "svc"
+penalty = "fplogt"
+window_factor = 2.0
+
+[[estimator]]
+name = "cc_aic"
+kind = "cc_ic"
+penalty = "aic"
+window_factor = 2.0
+
+[[estimator]]
+name = "cc_bic"
+kind = "cc_ic"
+penalty = "bic"
+window_factor = 2.0
+
+[[estimator]]
+name = "ba_seq"
+kind = "ba_seq"
+window_factor = 2.0
+
+[[estimator]]
+name = "rank_logdecay"
+kind = "rank"
+
+[[estimator]]
+name = "svt_c1"
+kind = "svt"
+c = 1.0
+
+[[estimator]]
+name = "mbc"
+kind = "mbc"

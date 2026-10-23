@@ -1,0 +1,60 @@
+# Q8 — ARMA (p, q) identification: EACF triangle-vertex vs Hannan-Rissanen
+# (with and without the 1983 erratum pass). Orders are encoded 10*p + q.
+
+[run]
+name = "q8"
+out = "benchmark/results/q8"
+n = [200, 400, 800, 1600, 3200, 10000]
+replications = 1000
+replications_large = 500
+large_from = 3200
+
+[[dgp]]
+name = "wn"
+true_order = 0
+
+[[dgp]]
+name = "ar2_strong"
+phi = [1.2, -0.6]
+true_order = 20
+
+[[dgp]]
+name = "ma2"
+theta = [0.6, 0.3]
+true_order = 2
+
+[[dgp]]
+name = "arma11"
+phi = [0.5]
+theta = [0.5]
+true_order = 11
+
+[[dgp]]
+name = "arma21"
+phi = [0.8, -0.64]
+theta = [0.7]
+true_order = 21
+
+[[dgp]]
+name = "arma12"
+phi = [0.5]
+theta = [0.6, 0.3]
+true_order = 12
+
+[[dgp]]
+name = "ma1_neg09"
+theta = [-0.9]
+true_order = 1
+
+[[estimator]]
+name = "eacf"
+kind = "eacf"
+
+[[estimator]]
+name = "hr"
+kind = "hr"
+
+[[estimator]]
+name = "hr_noerratum"
+kind = "hr"
+erratum = false

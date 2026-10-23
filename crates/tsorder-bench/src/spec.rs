@@ -2,8 +2,10 @@
 
 use serde::Deserialize;
 use tsorder_core::{
-    ensemble_order, fh_order, ic_order_with, polylog_memory, Criterion, EnsembleRule, Error,
-    FhConfig, IcMethod, Statistic, Threshold,
+    canonical_correlations_stacked, chi2_sf, eacf, ensemble_order, fh_order, hankel_rank_order,
+    hankel_svt_order, hannan_rissanen, ic_order, ic_order_with, polylog_memory, Criterion,
+    EacfConfig, EnsembleRule, Error, FhConfig, HankelRankConfig, HankelSvtConfig, HrConfig,
+    IcMethod, RankAlpha, RankPvalue, Statistic, SvcConfig, SvcPenalty, Threshold,
 };
 
 #[derive(Deserialize)]
@@ -29,8 +31,11 @@ pub struct Run {
     pub timing_series: Option<usize>,
 }
 
-/// One estimator. `kind` ∈ {"ic", "fh", "ensemble"}; the other fields apply
-/// depending on the kind (serde keeps unknown-field detection per design file).
+/// One estimator. `kind` ∈ {"ic", "fh", "ensemble", "svc", "svt", "rank",
+/// "cc_ic", "ba_seq", "mbc", "eacf", "hr"}; the other fields apply depending
+/// on the kind. The ARMA identifiers ("eacf", "hr") return the encoded order
+/// `10·p + q` (p, q ≤ 9); `eacf` with no clean vertex returns the failure
+/// code −2 via an Err.
 #[derive(Deserialize)]
 pub struct Est {
     pub name: String,
@@ -51,6 +56,12 @@ pub struct Est {
     // ensemble
     pub statistics: Option<Vec<String>>,
     pub rule: Option<String>,
+    // svc / cc_ic / ba_seq: window factor d (f = p = floor(d * p_AIC))
+    pub window_factor: Option<f64>,
+    // svc: "logt" | "fplogt"
+    pub penalty: Option<String>,
+    // hr: apply the 1983 erratum pass (default true)
+    pub erratum: Option<bool>,
 }
 
 fn criterion(name: &str) -> Criterion {
@@ -90,6 +101,27 @@ fn statistic(name: &str) -> Statistic {
 }
 
 impl Est {
+    /// Blank estimator with a name; used to build internal sub-estimators.
+    fn named(name: &str) -> Est {
+        Est {
+            name: name.to_string(),
+            kind: String::new(),
+            criterion: None,
+            method: None,
+            max_order: None,
+            statistic: None,
+            threshold: None,
+            c: None,
+            alpha: None,
+            memory: None,
+            statistics: None,
+            rule: None,
+            window_factor: None,
+            penalty: None,
+            erratum: None,
+        }
+    }
+
     fn threshold(&self, n: usize) -> Threshold {
         let c = self.c.unwrap_or(1.5);
         match self.threshold.as_deref().unwrap_or("bic") {
@@ -132,10 +164,151 @@ impl Est {
         }
     }
 
+    fn cc_window(&self, x: &[f64]) -> Result<usize, Error> {
+        let d = self.window_factor.unwrap_or(2.0);
+        let aic = ic_order(x, Criterion::Aic, None)?;
+        Ok(((d * aic.order as f64).floor() as usize).max(2))
+    }
+
     /// Run the estimator on `x`; `n` is the nominal sample size used to
     /// resolve n-dependent settings (α_n, memory).
     pub fn select(&self, x: &[f64], n: usize) -> Result<usize, Error> {
         match self.kind.as_str() {
+            "svc" => {
+                let penalty = match self.penalty.as_deref().unwrap_or("logt") {
+                    "logt" => SvcPenalty::LogT,
+                    "fplogt" => SvcPenalty::FpLogT,
+                    other => panic!("unknown svc penalty {other}"),
+                };
+                Ok(tsorder_core::svc_order(
+                    x,
+                    SvcConfig {
+                        window: None,
+                        window_factor: self.window_factor.unwrap_or(2.0),
+                        penalty,
+                    },
+                )?
+                .order)
+            }
+            "svt" => Ok(hankel_svt_order(
+                x,
+                HankelSvtConfig {
+                    k: None,
+                    c: self.c.unwrap_or(1.0),
+                },
+            )?
+            .order),
+            "rank" => {
+                let alpha = match &self.alpha {
+                    Some(toml::Value::Float(a)) => RankAlpha::Fixed(*a),
+                    None => RankAlpha::LogDecay,
+                    other => panic!("bad rank alpha {other:?}"),
+                };
+                Ok(hankel_rank_order(
+                    x,
+                    HankelRankConfig {
+                        k: None,
+                        alpha,
+                        pvalue: RankPvalue::Imhof,
+                    },
+                )?
+                .order)
+            }
+            "cc_ic" => {
+                // Akaike-1976-style criterion on the canonical correlations
+                // (the AIC/BIC comparators of Camba-Méndez & Kapetanios):
+                // minimise T log prod_{i<=r}(1 - rho_i^2)... equivalently
+                // T sum_{i<=r} log(1 - rho_i^2) + C(T) * r(f + p - r).
+                let w = self.cc_window(x)?;
+                let cc = canonical_correlations_stacked(x, w, w)?;
+                let t = n as f64;
+                let c_t = match self.penalty.as_deref().unwrap_or("bic") {
+                    "aic" => 2.0,
+                    "bic" => t.ln(),
+                    other => panic!("unknown cc_ic penalty {other}"),
+                };
+                let m = cc.correlations.len();
+                let mut best = (f64::INFINITY, 0usize);
+                let mut loglik = 0.0;
+                for r in 0..=m {
+                    let crit = t * loglik + c_t * (r * (2 * w - r)) as f64;
+                    if crit < best.0 {
+                        best = (crit, r);
+                    }
+                    if r < m {
+                        let rho2 = cc.correlations[r].powi(2).min(1.0 - 1e-12);
+                        loglik += (1.0 - rho2).ln();
+                    }
+                }
+                Ok(best.1)
+            }
+            "ba_seq" => {
+                // Bartlett's (1947) sequential canonical-correlation test as
+                // used by CK: reject rank r if
+                // [T - (f + p + 1)/2] * -sum_{i>r} log(1 - rho_i^2) exceeds
+                // the chi2_{(f-r)(p-r)} quantile; level kappa / log n.
+                let w = self.cc_window(x)?;
+                let cc = canonical_correlations_stacked(x, w, w)?;
+                let t = n as f64;
+                let alpha = 0.05 * 50f64.ln() / t.ln().max(1.0);
+                let m = cc.correlations.len();
+                let mut tails: Vec<f64> = vec![0.0; m + 1];
+                for r in (0..m).rev() {
+                    let rho2 = cc.correlations[r].powi(2).min(1.0 - 1e-12);
+                    tails[r] = tails[r + 1] - (1.0 - rho2).ln();
+                }
+                let scale = t - (2 * w + 1) as f64 / 2.0;
+                for (r, tail) in tails.iter().take(m).enumerate() {
+                    let stat = scale * tail;
+                    let df = ((w - r) * (w - r)) as f64;
+                    if chi2_sf(stat, df) >= alpha {
+                        return Ok(r);
+                    }
+                }
+                Ok(m)
+            }
+            "mbc" => {
+                // Mode-by-consensus over the McMillan-degree estimators
+                // (García-Hiernaux et al. 2012's MbC, with our voter set):
+                // SVC(logT), cc-BIC, the rank test and the SVT cut.
+                let votes = [
+                    tsorder_core::svc_order(x, SvcConfig::default()).map(|r| r.order),
+                    Est {
+                        kind: "cc_ic".into(),
+                        penalty: Some("bic".into()),
+                        ..Est::named("mbc_cc")
+                    }
+                    .select(x, n),
+                    hankel_rank_order(x, HankelRankConfig::default()).map(|r| r.order),
+                    hankel_svt_order(x, HankelSvtConfig::default()).map(|r| r.order),
+                ];
+                let mut counts = std::collections::BTreeMap::new();
+                for v in votes.into_iter().flatten() {
+                    *counts.entry(v).or_insert(0usize) += 1;
+                }
+                counts
+                    .into_iter()
+                    .max_by_key(|&(order, c)| (c, std::cmp::Reverse(order)))
+                    .map(|(order, _)| order)
+                    .ok_or(Error::Singular)
+            }
+            "eacf" => {
+                let r = eacf(x, EacfConfig::default())?;
+                match r.order {
+                    Some((p, q)) => Ok(10 * p + q),
+                    None => Err(Error::Invalid("no clean EACF vertex")),
+                }
+            }
+            "hr" => {
+                let r = hannan_rissanen(
+                    x,
+                    HrConfig {
+                        erratum_pass: self.erratum.unwrap_or(true),
+                        ..Default::default()
+                    },
+                )?;
+                Ok(10 * r.p + r.q)
+            }
             "ic" => {
                 let c = criterion(self.criterion.as_deref().expect("ic needs criterion"));
                 let m = method(self.method.as_deref().unwrap_or("yw"));
