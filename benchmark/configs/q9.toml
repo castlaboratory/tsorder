@@ -1,0 +1,83 @@
+# Q9 - observation noise: AR(2) + N(0, sd^2) measurement noise at SNR
+# {inf, 10, 3, 1} (sd = sqrt(gamma0/SNR), gamma0 = 3.571 for phi=(1.2,-0.6),
+# sigma=1). The observed process is ARMA(2,2) with the same McMillan degree,
+# so the state-dimension route (SVC) is structurally immune while AR-order
+# selectors degrade (Hwang ch. 8's setting). Metric: P(selected = 2).
+
+[run]
+name = "q9"
+out = "benchmark/results/q9"
+n = [200, 400, 800, 1600, 3200, 10000]
+replications = 2000
+replications_large = 1000
+large_from = 3200
+
+[[dgp]]
+name = "snr_inf"
+phi = [1.2, -0.6]
+true_order = 2
+
+[[dgp]]
+name = "snr_10"
+phi = [1.2, -0.6]
+obs_noise_sd = 0.5976
+true_order = 2
+
+[[dgp]]
+name = "snr_3"
+phi = [1.2, -0.6]
+obs_noise_sd = 1.0911
+true_order = 2
+
+[[dgp]]
+name = "snr_1"
+phi = [1.2, -0.6]
+obs_noise_sd = 1.8898
+true_order = 2
+
+[[estimator]]
+name = "bic_yw"
+kind = "ic"
+criterion = "bic"
+
+[[estimator]]
+name = "bic_burg"
+kind = "ic"
+criterion = "bic"
+method = "burg"
+
+[[estimator]]
+name = "hq_yw"
+kind = "ic"
+criterion = "hq"
+
+[[estimator]]
+name = "pacf_bic15"
+kind = "fh"
+statistic = "pacf"
+threshold = "bic"
+c = 1.5
+
+[[estimator]]
+name = "jirak_gumbel05"
+kind = "fh"
+statistic = "jirak_band"
+threshold = "gumbel"
+alpha = 0.05
+
+[[estimator]]
+name = "pacf_robust"
+kind = "fh"
+statistic = "pacf_robust"
+threshold = "bic"
+c = 1.5
+
+[[estimator]]
+name = "svc_logt_d1"
+kind = "svc"
+penalty = "logt"
+window_factor = 1.0
+
+[[estimator]]
+name = "hr"
+kind = "hr"

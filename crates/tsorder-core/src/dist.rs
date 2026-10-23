@@ -199,3 +199,68 @@ mod tests {
         assert!((a - b).abs() < 0.02, "satt {a} vs imhof {b}");
     }
 }
+
+/// Upper-tail quantile table of the asymptotic KPSS level-statistic null
+/// (integral of a squared Brownian bridge): pairs `(α, q)` with
+/// `P(KPSS > q) = α`. Simulated by `examples/unit_root_tables.rs`
+/// (T = 5000, 400 000 replications); matches the published Kwiatkowski et
+/// al. (1992) points 0.347/0.463/0.739 at 10 %/5 %/1 % to the expected
+/// discretisation accuracy.
+const KPSS_TABLE: [(f64, f64); 12] = [
+    (0.0005, 1.3136),
+    (0.001, 1.1739),
+    (0.0025, 1.0087),
+    (0.005, 0.8769),
+    (0.01, 0.7521),
+    (0.025, 0.5837),
+    (0.05, 0.4635),
+    (0.10, 0.3477),
+    (0.15, 0.2847),
+    (0.20, 0.2421),
+    (0.30, 0.1842),
+    (0.50, 0.1189),
+];
+
+/// Lower-tail quantile table of the asymptotic Dickey–Fuller `τ_c` null
+/// (t-statistic with constant under a pure random walk): pairs `(α, q)` with
+/// `P(τ < q) = α`. Same generator; matches the standard asymptotic points
+/// −2.57/−2.86/−3.43 at 10 %/5 %/1 %.
+const DF_TAU_C_TABLE: [(f64, f64); 12] = [
+    (0.0005, -4.2971),
+    (0.001, -4.1176),
+    (0.0025, -3.8743),
+    (0.005, -3.6730),
+    (0.01, -3.4508),
+    (0.025, -3.1363),
+    (0.05, -2.8713),
+    (0.10, -2.5726),
+    (0.15, -2.3749),
+    (0.20, -2.2203),
+    (0.30, -1.9725),
+    (0.50, -1.5691),
+];
+
+fn interp_table(table: &[(f64, f64)], alpha: f64) -> f64 {
+    let a = alpha.clamp(table[0].0, table[table.len() - 1].0);
+    for w in table.windows(2) {
+        let ((a0, q0), (a1, q1)) = (w[0], w[1]);
+        if a <= a1 {
+            // Log-linear in alpha (tail probabilities span decades).
+            let t = (a.ln() - a0.ln()) / (a1.ln() - a0.ln());
+            return q0 + t * (q1 - q0);
+        }
+    }
+    table[table.len() - 1].1
+}
+
+/// Critical value `q(α)` with `P(KPSS > q) = α` for the level-stationarity
+/// KPSS statistic (asymptotic null).
+pub fn kpss_critical(alpha: f64) -> f64 {
+    interp_table(&KPSS_TABLE, alpha)
+}
+
+/// Critical value `q(α)` with `P(τ_c < q) = α` for the Dickey–Fuller
+/// t-statistic with constant (asymptotic null).
+pub fn df_tau_c_critical(alpha: f64) -> f64 {
+    interp_table(&DF_TAU_C_TABLE, alpha)
+}

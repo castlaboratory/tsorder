@@ -27,6 +27,7 @@ pub mod criteria;
 pub mod dist;
 pub mod eacf;
 pub mod hankel;
+pub mod integration;
 pub mod levinson;
 pub mod linalg;
 pub mod robust;
@@ -42,12 +43,13 @@ pub use cancorr::{
     svc_order, Cancorr, SvcConfig, SvcPenalty, SvcResult,
 };
 pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
-pub use dist::{chi2_sf, imhof_sf, satterthwaite_sf};
+pub use dist::{chi2_sf, df_tau_c_critical, imhof_sf, kpss_critical, satterthwaite_sf};
 pub use eacf::{eacf, EacfConfig, EacfResult};
 pub use hankel::{
     hankel_rank_order, hankel_svt_order, HankelRankConfig, HankelRankResult, HankelSvtConfig,
     HankelSvtResult, RankAlpha, RankPvalue,
 };
+pub use integration::{integration_order, IntegrationConfig, IntegrationResult, UnitRootTest};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};
 pub use select::{
