@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["crates/tsorder-core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81"
+license = "MIT"
+authors = [
+    "André Leite <leite@castlab.org>",
+    "Raydonal Ospina <raydonal@castlab.org>",
+    "Cristiano Ferraz <cferraz@castlab.org>",
+    "Hugo Vasconcelos <hugo.vasconcelos@ufpe.br>",
+    "Diogo Bezerra <diogo.bezerra@ufpe.br>",
+]
+repository = "https://github.com/castlaboratory/tsorder"
+homepage = "https://castlaboratory.github.io/tsorder/"

@@ -1,0 +1,24 @@
+[package]
+name = "tsorder-core"
+description = "Order selection for time-series models: classical information criteria and Fine–Hwang threshold estimators (dependency-free core)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://castlaboratory.github.io/tsorder/api/tsorder_core/"
+readme = "../../README.md"
+keywords = ["time-series", "arima", "model-selection", "aic", "bic"]
+categories = ["mathematics", "science"]
+
+[lib]
+name = "tsorder_core"
+path = "src/lib.rs"
+
+[dependencies]
+# Deliberately none: the core must build everywhere the R (extendr) and
+# Python (PyO3/maturin) bindings build.
+
+[dev-dependencies]

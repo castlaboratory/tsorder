@@ -1,0 +1,258 @@
+//! Integration tests: every estimator must recover the order of a long,
+//! well-separated simulated series. Uses a tiny xorshift + Box–Muller RNG so the
+//! crate stays dependency-free.
+
+use tsorder_core::*;
+
+struct Rng(u64);
+impl Rng {
+    fn next_u64(&mut self) -> u64 {
+        let mut x = self.0;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        self.0 = x;
+        x
+    }
+    fn uniform(&mut self) -> f64 {
+        (self.next_u64() >> 11) as f64 / (1u64 << 53) as f64
+    }
+    fn normal(&mut self) -> f64 {
+        let u1 = self.uniform().max(1e-300);
+        let u2 = self.uniform();
+        (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos()
+    }
+}
+
+fn sim_arma(phi: &[f64], theta: &[f64], n: usize, seed: u64) -> Vec<f64> {
+    let burn = 500;
+    let mut rng = Rng(seed);
+    let total = n + burn;
+    let e: Vec<f64> = (0..total).map(|_| rng.normal()).collect();
+    let mut x = vec![0.0; total];
+    let start = phi.len().max(theta.len());
+    for t in start..total {
+        let mut v = e[t];
+        for (j, p) in phi.iter().enumerate() {
+            v += p * x[t - j - 1];
+        }
+        for (j, th) in theta.iter().enumerate() {
+            v += th * e[t - j - 1];
+        }
+        x[t] = v;
+    }
+    x[burn..].to_vec()
+}
+
+#[test]
+fn ar2_recovered_by_all_ar_statistics_and_bic() {
+    let x = sim_arma(&[1.2, -0.6], &[], 4000, 42);
+    for stat in [Statistic::Pacf, Statistic::LongArOls] {
+        let r = fh_order(
+            &x,
+            FhConfig {
+                statistic: stat,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(r.order, 2, "{} gave {}", stat.name(), r.order);
+    }
+    let bic = ic_order(&x, Criterion::Bic, None).unwrap();
+    assert_eq!(bic.order, 2);
+    let hq = ic_order(&x, Criterion::Hq, None).unwrap();
+    assert_eq!(hq.order, 2);
+}
+
+#[test]
+fn subset_ar4_recovered_by_pacf() {
+    let x = sim_arma(&[0.5, 0.0, 0.0, 0.3], &[], 4000, 7);
+    let r = fh_order(&x, FhConfig::default()).unwrap();
+    assert_eq!(r.order, 4);
+}
+
+#[test]
+fn ma2_recovered_by_bartlett_acf() {
+    let x = sim_arma(&[], &[0.6, 0.3], 4000, 99);
+    let r = fh_order(
+        &x,
+        FhConfig {
+            statistic: Statistic::AcfBartlett,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(r.order, 2);
+}
+
+#[test]
+fn white_noise_gives_order_zero() {
+    let x = sim_arma(&[], &[], 2000, 3);
+    let r = fh_order(&x, FhConfig::default()).unwrap();
+    assert_eq!(r.order, 0);
+    let bic = ic_order(&x, Criterion::Bic, None).unwrap();
+    assert_eq!(bic.order, 0);
+}
+
+#[test]
+fn ensemble_majority_on_ar1() {
+    let x = sim_arma(&[0.7], &[], 3000, 11);
+    let cfgs = [
+        FhConfig {
+            statistic: Statistic::Pacf,
+            ..Default::default()
+        },
+        FhConfig {
+            statistic: Statistic::LongArOls,
+            ..Default::default()
+        },
+        FhConfig {
+            statistic: Statistic::LongArYw,
+            ..Default::default()
+        },
+    ];
+    let e = ensemble_order(&x, &cfgs, EnsembleRule::Majority).unwrap();
+    assert_eq!(e.order, 1);
+    assert_eq!(e.members.len(), 3);
+}
+
+#[test]
+fn all_criteria_run() {
+    let x = sim_arma(&[0.5], &[], 500, 5);
+    for c in Criterion::ALL {
+        let r = ic_order(&x, c, Some(10)).unwrap();
+        assert_eq!(r.values.len(), 11, "{}", c.name());
+    }
+}
+
+#[test]
+fn errors_are_reported() {
+    assert!(matches!(
+        fh_order(&[1.0, 2.0, 3.0], FhConfig::default()),
+        Err(Error::TooShort { .. })
+    ));
+    assert!(matches!(
+        ic_order(&[1.0, f64::NAN, 3.0, 4.0, 5.0], Criterion::Bic, Some(2)),
+        Err(Error::NonFinite)
+    ));
+}
+
+#[test]
+fn all_statistics_invariant_to_shift_and_scale() {
+    // Regression test for the review of 2026-10-23: LongArOls had no demeaning and
+    // selected order ~10 on white noise + 50.
+    let wn = sim_arma(&[], &[], 2000, 3);
+    let ar2 = sim_arma(&[1.2, -0.6], &[], 2000, 21);
+    for base in [&wn, &ar2] {
+        let shifted: Vec<f64> = base.iter().map(|v| 3.0 * v + 50.0).collect();
+        for stat in Statistic::ALL {
+            let cfg = FhConfig {
+                statistic: stat,
+                ..Default::default()
+            };
+            let a = fh_order(base, cfg).unwrap();
+            let b = fh_order(&shifted, cfg).unwrap();
+            assert_eq!(
+                a.order,
+                b.order,
+                "{} changed order under affine map",
+                stat.name()
+            );
+            for (u, v) in a.studentized.iter().zip(&b.studentized) {
+                assert!(
+                    (u - v).abs() < 1e-8,
+                    "{} studentized stats differ",
+                    stat.name()
+                );
+            }
+        }
+        for c in Criterion::ALL {
+            let a = ic_order(base, c, Some(15)).unwrap();
+            let b = ic_order(&shifted, c, Some(15)).unwrap();
+            assert_eq!(
+                a.order,
+                b.order,
+                "{} changed order under affine map",
+                c.name()
+            );
+        }
+    }
+}
+
+#[test]
+fn invalid_thresholds_are_errors_not_silent() {
+    let x = sim_arma(&[0.5], &[], 500, 9);
+    for thr in [
+        Threshold::BicLike { c: -1.0 },
+        Threshold::BicLike { c: 0.0 },
+        Threshold::Lil { c: f64::NAN },
+        Threshold::Fixed(-5.0),
+        Threshold::Fixed(f64::INFINITY),
+    ] {
+        let r = fh_order(
+            &x,
+            FhConfig {
+                threshold: thr,
+                ..Default::default()
+            },
+        );
+        assert!(
+            matches!(r, Err(Error::Invalid(_))),
+            "{} accepted",
+            thr.name()
+        );
+    }
+}
+
+#[test]
+fn sparse_ar_pacf_gives_order_but_long_ar_gives_support() {
+    // AR(4) with φ2 = φ3 = 0. The PACF at lags 2 and 3 is NOT zero for this process, so
+    // PACF-clip recovers the order 4 but says nothing about sparsity; the long-AR OLS
+    // coefficients at lags 2 and 3 are clipped to zero and recover the support.
+    let x = sim_arma(&[0.5, 0.0, 0.0, 0.3], &[], 8000, 7);
+    let pacf = fh_order(&x, FhConfig::default()).unwrap();
+    assert_eq!(pacf.order, 4);
+    let ols = fh_order(
+        &x,
+        FhConfig {
+            statistic: Statistic::LongArOls,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(ols.order, 4);
+    let support: Vec<bool> = ols.studentized.iter().map(|t| t.abs() > ols.tau).collect();
+    assert_eq!(&support[..4], &[true, false, false, true]);
+}
+
+#[test]
+fn aicc_counts_variance_and_matches_formula() {
+    // k=2, n=50: K=3, AICc = n log s2 + 2K + 2K(K+1)/(n-K-1) = ... + 6 + 24/46
+    let v = Criterion::Aicc.value(1.0, 2, 50);
+    assert!((v - (6.0 + 24.0 / 46.0)).abs() < 1e-12);
+    assert_eq!(Criterion::n_params(2), 3);
+}
+
+#[test]
+fn gumbel_level_is_controlled_on_white_noise() {
+    // Family-wise overestimation on white noise at alpha = 0.05 should be ≈ 5 % (loose check).
+    let mut over = 0;
+    let reps = 400;
+    for seed in 0..reps {
+        let x = sim_arma(&[], &[], 1000, 1000 + seed as u64);
+        let r = fh_order(
+            &x,
+            FhConfig {
+                threshold: Threshold::Gumbel { alpha: 0.05 },
+                memory: Some(polylog_memory(1000, 2.0)),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        if r.order > 0 {
+            over += 1;
+        }
+    }
+    let rate = over as f64 / reps as f64;
+    assert!(rate < 0.12, "overestimation rate {rate}");
+}

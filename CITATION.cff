@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use tsorder, please cite it as below."
+title: "tsorder: order selection for time-series models"
+type: software
+version: 0.1.0
+date-released: 2026-10-23
+license: MIT
+repository-code: "https://github.com/castlaboratory/tsorder"
+url: "https://castlaboratory.github.io/tsorder/"
+authors:
+  - family-names: Leite
+    given-names: André
+    email: leite@castlab.org
+    orcid: "https://orcid.org/0000-0002-4718-9766"
+  - family-names: Ospina
+    given-names: Raydonal
+    email: raydonal@castlab.org
+    orcid: "https://orcid.org/0000-0002-9884-9090"
+  - family-names: Ferraz
+    given-names: Cristiano
+    email: cferraz@castlab.org
+    orcid: "https://orcid.org/0000-0002-6838-6734"
+  - family-names: Vasconcelos
+    given-names: Hugo
+    email: hugo.vasconcelos@ufpe.br
+    orcid: "https://orcid.org/0000-0001-6249-0920"
+  - family-names: Bezerra
+    given-names: Diogo
+    email: diogo.bezerra@ufpe.br
+    orcid: "https://orcid.org/0000-0002-1216-8674"

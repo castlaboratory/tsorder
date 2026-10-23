@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tsorder — order selection for time-series models</title>
+<meta name="description" content="A Rust crate for time-series order selection: AIC, AICc, BIC, HQ and FPE next to Fine–Hwang threshold estimators with pluggable studentized statistics. No dependencies, deterministic." />
+<meta property="og:title" content="tsorder — order selection for time series in Rust" />
+<meta property="og:description" content="Classical information criteria and Fine–Hwang threshold estimators side by side: grow the memory with the sample, studentize every statistic, keep the last lag that noise cannot explain." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://castlaboratory.github.io/tsorder/" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%90%3C/text%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg-soft: #121a33;
+    --card: #16203f;
+    --border: #263457;
+    --fg: #e8edf7;
+    --muted: #9fb0d0;
+    --brand: #7c5cff;
+    --brand-2: #29c7ac;
+    --accent: #ffb14e;
+    --code-bg: #0d1428;
+    --shadow: 0 12px 40px rgba(0,0,0,.35);
+    --radius: 16px;
+    --maxw: 1080px;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --grid: #263457;
+    --axis: #34456f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f8fe;
+      --bg-soft: #eef2fb;
+      --card: #ffffff;
+      --border: #dbe3f4;
+      --fg: #10192e;
+      --muted: #56648a;
+      --code-bg: #0d1428;
+      --shadow: 0 12px 36px rgba(30,45,90,.12);
+      --series-1: #2a78d6;
+      --series-2: #eb6834;
+      --grid: #e6ebf7;
+      --axis: #c3cde6;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background:
+      radial-gradient(1100px 600px at 12% -8%, rgba(124,92,255,.20), transparent 60%),
+      radial-gradient(900px 500px at 96% 4%, rgba(41,199,172,.16), transparent 55%),
+      var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+  /* Nav */
+  header.nav {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; font-size: 1.1rem; }
+  .brand .logo { font-size: 1.35rem; }
+  .nav-links { display: flex; gap: 22px; align-items: center; }
+  .nav-links a { color: var(--muted); font-weight: 600; font-size: .95rem; }
+  .nav-links a:hover { color: var(--fg); text-decoration: none; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: .95rem;
+    border: 1px solid var(--border); color: var(--fg); background: var(--card);
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn.primary { background: linear-gradient(135deg, var(--brand), #5b73ff); color: #fff; border: none; }
+  @media (max-width: 720px) { .nav-links a.hide-sm { display: none; } }
+
+  /* Hero */
+  .hero { padding: 74px 0 40px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--brand-2); background: color-mix(in srgb, var(--brand-2) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--brand-2) 30%, transparent);
+    padding: 6px 12px; border-radius: 999px;
+  }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.05; letter-spacing: -.03em; margin: 18px 0 14px; }
+  h1 .grad { background: linear-gradient(120deg, var(--brand), var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: 1.18rem; color: var(--muted); max-width: 46ch; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 26px; }
+  .badges img { height: 22px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+
+  /* Terminal card */
+  .term {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .term-bar { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+  .term-title { margin-left: 8px; color: #7f8bb0; font: 600 .82rem ui-monospace, monospace; }
+  pre { margin: 0; padding: 18px 18px 22px; overflow-x: auto; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88rem; }
+  pre code { color: #d7e0f5; }
+  .c-prompt { color: #6ee7c8; } .c-flag { color: #ffb14e; } .c-cmd { color: #8ea2ff; } .c-cmt { color: #6b779b; } .c-ok { color: #59d99a; }
+  .c-str { color: #ffb14e; } .c-ty { color: #6ee7c8; } .c-kw { color: #c9a5ff; }
+
+  /* Sections */
+  section { padding: 56px 0; }
+  section.alt { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.02em; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 30px; max-width: 62ch; }
+
+  .grid { display: grid; gap: 18px; }
+  .grid.f3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.f2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 860px) { .grid.f3, .grid.f2 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px; transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+  .card .ic { font-size: 1.5rem; }
+  .card h3 { margin: 12px 0 6px; font-size: 1.1rem; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--muted); font-size: .96rem; }
+
+  /* Entity pills */
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .pill { font: 600 .82rem ui-monospace, monospace; padding: 6px 11px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 12%, transparent); border: 1px solid color-mix(in srgb, var(--brand) 26%, transparent); color: var(--fg); }
+  .pill.alt2 { background: color-mix(in srgb, var(--brand-2) 12%, transparent); border-color: color-mix(in srgb, var(--brand-2) 26%, transparent); }
+  .pill-h { margin: 16px 0 2px; font-weight: 700; font-size: .9rem; color: var(--muted); }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .steps { grid-template-columns: 1fr 1fr; } }
+  .step { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+  .step .n { font: 800 .8rem ui-monospace, monospace; color: var(--brand-2); }
+  .step h4 { margin: 6px 0 4px; font-size: 1rem; }
+  .step p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+  .panel { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; }
+  .note { color: var(--muted); font-size: .9rem; margin-top: 10px; }
+
+  table.cmp { width: 100%; border-collapse: collapse; font-size: .94rem; }
+  table.cmp th, table.cmp td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.cmp th { color: var(--muted); font-weight: 700; }
+  .scroll { overflow-x: auto; }
+
+  footer { padding: 40px 0 60px; color: var(--muted); border-top: 1px solid var(--border); }
+  .foot-inner { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+  .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+
+  /* Chart */
+  .viz { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+  .viz h3 { margin: 0 0 2px; font-size: 1.1rem; letter-spacing: -.01em; }
+  .viz .cap { margin: 0 0 12px; color: var(--muted); font-size: .92rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 6px; font-size: .88rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .key { display: inline-block; width: 18px; height: 10px; border-radius: 2px; }
+  .key.k1 { background: var(--series-1); }
+  .key.k1d { background: color-mix(in srgb, var(--series-1) 30%, transparent); }
+  .key.k2 { height: 0; border-top: 2px dashed var(--series-2); }
+  .plot { position: relative; }
+  .plot svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .plot text { font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .plot text.end { fill: var(--fg); font-weight: 700; }
+  .tip { position: absolute; pointer-events: none; min-width: 170px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow); font-size: .85rem; color: var(--muted); opacity: 0; transition: opacity .1s ease; }
+  .tip.on { opacity: 1; }
+  .tip .when { font-weight: 700; color: var(--fg); margin-bottom: 4px; }
+  .tip .row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+  .tip .row b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  details.tbl { margin-top: 12px; color: var(--muted); font-size: .9rem; }
+  details.tbl summary { cursor: pointer; font-weight: 700; }
+  table.data { width: 100%; border-collapse: collapse; font-size: .9rem; margin-top: 10px; }
+  table.data th, table.data td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+  table.data th:first-child, table.data td:first-child { text-align: left; }
+  table.data th { color: var(--muted); font-weight: 700; }
+  table.data td { color: var(--fg); }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="logo">📐</span> tsorder</div>
+    <nav class="nav-links">
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#example">Example</a>
+      <a class="hide-sm" href="#how">How it works</a>
+      <a class="hide-sm" href="#install">Install</a>
+      <a class="hide-sm" href="#foundations">Foundations</a>
+      <a class="hide-sm" href="api/tsorder_core/">API</a>
+      <a class="btn" href="https://github.com/castlaboratory/tsorder">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">◆ Rust · time series</span>
+        <h1>The order of a model, kept only where <span class="grad">noise can't explain it</span>.</h1>
+        <p class="lead">Classical information criteria next to Fine–Hwang threshold estimators: grow the memory with the sample, studentize every statistic, clip what white noise could produce, report the last surviving lag.</p>
+        <div class="badges">
+          <a href="https://github.com/castlaboratory/tsorder/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/castlaboratory/tsorder/actions/workflows/ci.yml/badge.svg"></a>
+          <a href="https://crates.io/crates/tsorder-core"><img alt="crates.io" src="https://img.shields.io/crates/v/tsorder-core.svg"></a>
+          <a href="https://github.com/castlaboratory/tsorder/blob/main/LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+          <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-brightgreen.svg">
+          <img alt="Platforms" src="https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational.svg">
+        </div>
+        <div class="cta">
+          <a class="btn primary" href="#install">Get started →</a>
+          <a class="btn" href="api/tsorder_core/">API reference</a>
+          <a class="btn" href="https://github.com/castlaboratory/tsorder">GitHub ★</a>
+        </div>
+      </div>
+      <div class="term" aria-hidden="true">
+        <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">examples/pacf_path.rs</span></div>
+<pre><code><span class="c-kw">use</span> tsorder_core::*;
+
+<span class="c-cmt">// an AR(2) series, n = 400</span>
+<span class="c-kw">let</span> bic = <span class="c-cmd">ic_order</span>(&amp;x, <span class="c-ty">Criterion</span>::<span class="c-ty">Bic</span>, <span class="c-ty">None</span>)?;
+<span class="c-kw">let</span> fh  = <span class="c-cmd">fh_order</span>(&amp;x, <span class="c-ty">FhConfig</span>::<span class="c-cmd">default</span>())?;
+
+<span class="c-cmt">// studentized PACF vs threshold</span>
+<span class="c-ok">BIC order = 2</span>
+<span class="c-ok">FH  order = 2</span>  (p_n = 10, tau = 3.00)
+|t_1| = 14.46  <span class="c-ok">✓ keep</span>
+|t_2| = 11.59  <span class="c-ok">✓ keep</span>
+|t_3| =  0.19  clip
+   ⋮
+|t_10| = 1.06  clip</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="alt">
+    <div class="wrap">
+      <h2>Two families, one honest comparison</h2>
+      <p class="sub">Information criteria score every candidate order; threshold estimators keep the last lag whose statistic survives a vanishing cut-off. <code>tsorder</code> computes both from one pass over the data, so they can be compared on equal footing — in accuracy and in time.</p>
+      <div class="grid f3">
+        <div class="card"><div class="ic">🧮</div><h3>One data path</h3><p>Sample autocovariance → Levinson–Durbin recursion. AIC, AICc, BIC, HQ and FPE, the PACF and the long AR fit all come from the same O(K²) pass.</p></div>
+        <div class="card"><div class="ic">📏</div><h3>Studentized by construction</h3><p>The raw Fine–Hwang threshold is not scale-invariant and degrades with n. Every statistic here returns its null standard error, and every threshold lives on the studentized scale.</p></div>
+        <div class="card"><div class="ic">🔌</div><h3>Pluggable statistics</h3><p>PACF for AR, Bartlett-studentized ACF for MA, long-AR coefficients by Yule–Walker or OLS. The statistic and the cut-off rule are orthogonal axes of the API.</p></div>
+        <div class="card"><div class="ic">🎚️</div><h3>Calibrated thresholds</h3><p>BIC-like, iterated-logarithm, max-of-K and Gumbel rules. The Gumbel threshold controls the family-wise over-selection level: α = 5% means ≈ 5% false positives on white noise, verified in the tests.</p></div>
+        <div class="card"><div class="ic">🗳️</div><h3>Ensembles</h3><p>Majority, median, min and max over several configurations — insurance under misspecification, following the model-by-consensus idea of García-Hiernaux et al. (2012).</p></div>
+        <div class="card"><div class="ic">🦀</div><h3>No dependencies</h3><p>Pure Rust on the standard library, deterministic, MSRV 1.81. Errors are values (<code>Result</code>), never a panic on user data — ready for thin R and Python bindings.</p></div>
+      </div>
+      <div class="pill-h">Statistics</div>
+      <div class="pills"><span class="pill">Pacf</span><span class="pill">AcfBartlett</span><span class="pill">LongArYw</span><span class="pill">LongArOls</span><span class="pill">Acf</span></div>
+      <div class="pill-h">Thresholds &amp; memory</div>
+      <div class="pills"><span class="pill alt2">BicLike{c}</span><span class="pill alt2">Lil{c}</span><span class="pill alt2">MaxOfK{c}</span><span class="pill alt2">Gumbel{α}</span><span class="pill alt2">Fixed</span><span class="pill alt2">p_n = ⌊n^0.4⌋</span><span class="pill alt2">p_n = ⌈c·log n⌉</span></div>
+    </div>
+  </section>
+
+  <section id="example">
+    <div class="wrap">
+      <h2>An AR(2), read straight off the PACF</h2>
+      <p class="sub">Simulated AR(2) with φ = (1.2, −0.6) and n = 400. The studentized partial autocorrelations at lags 1 and 2 tower over the threshold τₙ = 3.0; everything after them is what white noise produces. The last crossing gives the order — the same answer BIC reaches by scoring all eleven candidate models.</p>
+      <div class="viz">
+        <h3>Studentized PACF and the Fine–Hwang threshold</h3>
+        <p class="cap">|PACF(k)|·√n for k = 1…p_n, with p_n = ⌊400^0.4⌋ = 10 and the default threshold τₙ = √(1.5 log n).</p>
+        <div class="legend">
+          <span><i class="key k1"></i>Kept (above τₙ)</span>
+          <span><i class="key k1d"></i>Clipped</span>
+          <span><i class="key k2"></i>Threshold τₙ = 3.0</span>
+        </div>
+        <div class="plot" id="plot"><div class="tip" id="tip"></div></div>
+        <details class="tbl">
+          <summary>Values as a table</summary>
+          <div class="scroll"><table class="data" id="table"><thead><tr><th>Lag</th><th>|studentized PACF|</th><th>Decision</th></tr></thead><tbody></tbody></table></div>
+          <p class="note">Selected order: 2 (last lag above the threshold). BIC on the same series: 2.</p>
+        </details>
+      </div>
+      <p class="note">Reproducible: <code>cargo run --release --example pacf_path</code> prints these numbers.</p>
+    </div>
+  </section>
+
+  <section id="how" class="alt">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="sub">Fine &amp; Hwang (1979) proved the first consistent order estimator: no likelihood, no Gaussianity, no maximum order to guess. <code>tsorder</code> is that idea with the one repair it needed — studentization.</p>
+      <div class="steps">
+        <div class="step"><div class="n">01</div><h4>Grow the memory</h4><p>Fit a long model of order p_n that increases with the sample size n.</p></div>
+        <div class="step"><div class="n">02</div><h4>One recursion</h4><p>Autocovariances and one Levinson–Durbin pass give every statistic and every criterion.</p></div>
+        <div class="step"><div class="n">03</div><h4>Studentize</h4><p>Each statistic is divided by its null standard error, so the threshold is scale-free.</p></div>
+        <div class="step"><div class="n">04</div><h4>Clip and report</h4><p>Zero everything below τₙ; the last surviving lag is the order. The full path is returned for plotting.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Install &amp; run</h2>
+      <p class="sub">Add the crate and pass any <code>&amp;[f64]</code>. Rust 1.81 or later; changes between versions in the <a href="https://github.com/castlaboratory/tsorder/blob/main/CHANGELOG.md">changelog</a>. R (extendr) and Python (PyO3) bindings are planned on top of this same core.</p>
+      <div class="panel" style="margin-bottom:18px">
+<pre><code><span class="c-prompt">$</span> <span class="c-cmd">cargo</span> add tsorder-core</code></pre>
+      </div>
+      <div class="grid f2">
+        <div>
+          <div class="panel">
+<pre><code><span class="c-cmt">// classical criteria and the default Fine–Hwang</span>
+<span class="c-kw">use</span> tsorder_core::*;
+
+<span class="c-kw">let</span> bic = <span class="c-cmd">ic_order</span>(&amp;x, <span class="c-ty">Criterion</span>::<span class="c-ty">Bic</span>, <span class="c-ty">None</span>)?;
+<span class="c-kw">let</span> fh  = <span class="c-cmd">fh_order</span>(&amp;x, <span class="c-ty">FhConfig</span>::<span class="c-cmd">default</span>())?;
+println!(<span class="c-str">"BIC {} / FH {}"</span>, bic.order, fh.order);
+
+<span class="c-cmt">// the whole studentized path, for plots</span>
+<span class="c-kw">for</span> (k, t) <span class="c-kw">in</span> fh.studentized.<span class="c-cmd">iter</span>().<span class="c-cmd">enumerate</span>() {
+    println!(<span class="c-str">"lag {} |t| {:.2}"</span>, k + <span class="c-flag">1</span>, t.<span class="c-cmd">abs</span>());
+}</code></pre>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+<pre><code><span class="c-cmt">// MA order, level-calibrated threshold, ensemble</span>
+<span class="c-kw">let</span> ma = <span class="c-cmd">fh_order</span>(&amp;x, <span class="c-ty">FhConfig</span> {
+    statistic: <span class="c-ty">Statistic</span>::<span class="c-ty">AcfBartlett</span>,
+    threshold: <span class="c-ty">Threshold</span>::<span class="c-ty">Gumbel</span> { alpha: <span class="c-flag">0.05</span> },
+    ..<span class="c-ty">Default</span>::<span class="c-cmd">default</span>()
+})?;
+
+<span class="c-kw">let</span> e = <span class="c-cmd">ensemble_order</span>(&amp;x, &amp;[
+    <span class="c-ty">FhConfig</span>::<span class="c-cmd">default</span>(),
+    <span class="c-ty">FhConfig</span> { statistic: <span class="c-ty">Statistic</span>::<span class="c-ty">LongArOls</span>,
+               ..<span class="c-ty">Default</span>::<span class="c-cmd">default</span>() },
+], <span class="c-ty">EnsembleRule</span>::<span class="c-ty">Majority</span>)?;</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="foundations" class="alt">
+    <div class="wrap">
+      <h2>Built on the literature, tested against it</h2>
+      <p class="sub">Each piece implements a published result and says so. Where a convention mattered, it follows the R reference implementation, so numbers are comparable across ecosystems.</p>
+      <div class="card scroll">
+        <table class="cmp">
+          <thead><tr><th>Component</th><th>Foundation</th></tr></thead>
+          <tbody>
+            <tr><td>Threshold-and-clip order estimation</td><td>Fine &amp; Hwang (1979); Hwang (1978)</td></tr>
+            <tr><td>PACF null distribution (self-studentized)</td><td>Quenouille (1949)</td></tr>
+            <tr><td>ACF standard errors for MA</td><td>Bartlett (1946)</td></tr>
+            <tr><td>Bands over a growing Yule–Walker fit, Gumbel calibration</td><td>Jirak (2012, <em>Ann. Statist.</em>)</td></tr>
+            <tr><td>Innovation variances &amp; criteria conventions</td><td>R's <code>stats::ar.yw</code>; AICc as in <code>forecast</code></td></tr>
+            <tr><td>Ensemble (model by consensus)</td><td>García-Hiernaux, Jerez &amp; Casals (2012)</td></tr>
+            <tr><td>Planned — ARMA via canonical correlations &amp; Hankel rank</td><td>Bauer (2001); Robin &amp; Smith (2000); Camba-Méndez &amp; Kapetanios (2001)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid f3" style="margin-top:18px">
+        <div class="card"><div class="ic">✅</div><h3>Tested properties</h3><p>Order recovery on long simulated AR, MA and subset-AR series; affine invariance of every statistic and criterion; empirical level of the Gumbel rule on white noise; errors instead of silent NaN.</p></div>
+        <div class="card"><div class="ic">🖥️</div><h3>CI on every platform</h3><p>fmt · clippy <code>-D warnings</code> · tests and docs on Linux, macOS and Windows, plus the MSRV build (Rust 1.81).</p></div>
+        <div class="card"><div class="ic">⚖️</div><h3>MIT, nothing attached</h3><p>No dependencies, no license to reconcile, no supply chain to watch. Pre-alpha: the API is still settling.</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div><strong>tsorder</strong> · MIT-licensed · André Leite, Raydonal Ospina, Cristiano Ferraz, Hugo Vasconcelos, Diogo Bezerra</div>
+    <div class="foot-links">
+      <a href="https://github.com/castlaboratory/tsorder">Repository</a>
+      <a href="api/tsorder_core/">API reference</a>
+      <a href="https://github.com/castlaboratory/tsorder/blob/main/LICENSE">License</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Output of `cargo run --release --example pacf_path` (AR(2), phi = (1.2, -0.6), n = 400, seed 42).
+  const DATA = {
+    tau: 2.998, order: 2, bic: 2, p_n: 10,
+    t: [14.457, 11.586, 0.193, 0.481, 0.197, 0.134, 0.359, 0.559, 1.403, 1.055]
+  };
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 960, H = 360, M = { top: 18, right: 24, bottom: 36, left: 52 };
+  const plot = document.getElementById("plot"), tip = document.getElementById("tip");
+  const n = DATA.t.length, top = 15, iw = W - M.left - M.right;
+  const band = iw / n, bw = Math.min(46, band * 0.62);
+  const xc = i => M.left + band * (i + 0.5);
+  const y = v => M.top + (H - M.top - M.bottom) * (top - v) / top;
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Bar chart of the absolute studentized PACF at lags 1 to 10 of a simulated AR(2) series. Lags 1 and 2 are far above the threshold of 3; lags 3 to 10 are below it. The values are in the table below the chart.");
+  plot.insertBefore(svg, tip);
+  const el = (name, attrs, parent) => {
+    const e = document.createElementNS(NS, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(e);
+    return e;
+  };
+  const fmt = v => v.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  for (let v = 0; v <= top; v += 3) {
+    el("line", { x1: M.left, x2: W - M.right, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 });
+    el("text", { x: M.left - 10, y: y(v) + 4, "text-anchor": "end" }).textContent = v;
+  }
+  DATA.t.forEach((v, i) => {
+    const kept = v > DATA.tau;
+    el("rect", {
+      x: xc(i) - bw / 2, y: y(v), width: bw, height: Math.max(1.5, y(0) - y(v)),
+      rx: 4, fill: "var(--series-1)", "fill-opacity": kept ? 1 : .3
+    });
+    el("text", { x: xc(i), y: H - 12, "text-anchor": "middle" }).textContent = i + 1;
+    if (kept) el("text", { x: xc(i), y: y(v) - 8, "text-anchor": "middle", class: "end" }).textContent = fmt(v);
+  });
+  el("text", { x: M.left + iw / 2, y: H + 2, "text-anchor": "middle" }).textContent = "lag k";
+  // threshold line
+  el("line", { x1: M.left, x2: W - M.right, y1: y(DATA.tau), y2: y(DATA.tau), stroke: "var(--series-2)", "stroke-width": 2, "stroke-dasharray": "7 5" });
+  el("text", { x: W - M.right, y: y(DATA.tau) - 8, "text-anchor": "end", class: "end" }).textContent = "τₙ = " + fmt(DATA.tau);
+
+  // hover layer
+  const hi = el("rect", { y: M.top, height: H - M.top - M.bottom, fill: "var(--fg)", "fill-opacity": .06, visibility: "hidden", rx: 6 });
+  const row = (label, value) => {
+    const r = document.createElement("div"); r.className = "row";
+    const l = document.createElement("span"); l.textContent = label;
+    const b = document.createElement("b"); b.textContent = value;
+    r.append(l, b); return r;
+  };
+  const show = i => {
+    const v = DATA.t[i];
+    hi.setAttribute("x", xc(i) - band / 2 + 2);
+    hi.setAttribute("width", band - 4);
+    hi.setAttribute("visibility", "visible");
+    tip.replaceChildren();
+    const when = document.createElement("div"); when.className = "when"; when.textContent = "Lag " + (i + 1);
+    tip.appendChild(when);
+    tip.appendChild(row("|studentized PACF|", fmt(v)));
+    tip.appendChild(row("Decision", v > DATA.tau ? "keep" : "clip"));
+    const box = plot.getBoundingClientRect(), px = xc(i) / W * box.width;
+    const left = px + 14 + tip.offsetWidth > box.width ? px - 14 - tip.offsetWidth : px + 14;
+    tip.style.left = Math.max(0, left) + "px";
+    tip.style.top = Math.max(0, y(Math.min(v, top)) / H * box.height - tip.offsetHeight - 10) + "px";
+    tip.classList.add("on");
+  };
+  const hide = () => { tip.classList.remove("on"); hi.setAttribute("visibility", "hidden"); };
+  let focus = 0;
+  const at = e => {
+    const box = svg.getBoundingClientRect();
+    const px = (e.clientX - box.left) / box.width * W;
+    return Math.max(0, Math.min(n - 1, Math.floor((px - M.left) / band)));
+  };
+  svg.addEventListener("pointermove", e => { focus = at(e); show(focus); });
+  svg.addEventListener("pointerleave", hide);
+  svg.setAttribute("tabindex", "0");
+  svg.addEventListener("focus", () => show(focus));
+  svg.addEventListener("blur", hide);
+  svg.addEventListener("keydown", e => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    focus = Math.max(0, Math.min(n - 1, focus + (e.key === "ArrowLeft" ? -1 : 1)));
+    show(focus);
+  });
+
+  const body = document.querySelector("#table tbody");
+  DATA.t.forEach((v, i) => {
+    const tr = document.createElement("tr");
+    [String(i + 1), fmt(v), v > DATA.tau ? "keep" : "clip"].forEach(t => {
+      const td = document.createElement("td"); td.textContent = t; tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+})();
+</script>
+</body>
+</html>
