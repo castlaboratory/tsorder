@@ -110,7 +110,6 @@ pub fn singular_values(a: &[f64], rows: usize, cols: usize) -> Vec<f64> {
             u.push(a[i * cols + j]);
         }
     }
-    let col = |u: &Vec<f64>, j: usize| -> std::ops::Range<usize> { j * rows..(j + 1) * rows };
     let tol = 1e-14;
     for _sweep in 0..60 {
         let mut rotated = false;
@@ -118,8 +117,8 @@ pub fn singular_values(a: &[f64], rows: usize, cols: usize) -> Vec<f64> {
             for j in i + 1..cols {
                 let (mut aii, mut ajj, mut aij) = (0.0f64, 0.0f64, 0.0f64);
                 for t in 0..rows {
-                    let ui = u[col(&u, i).start + t];
-                    let uj = u[col(&u, j).start + t];
+                    let ui = u[i * rows + t];
+                    let uj = u[j * rows + t];
                     aii += ui * ui;
                     ajj += uj * uj;
                     aij += ui * uj;
