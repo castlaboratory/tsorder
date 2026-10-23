@@ -15,7 +15,7 @@ pub struct Dgp {
     pub theta: Vec<f64>,
     /// True order for accuracy metrics; omit when it is not defined (AR(∞)).
     pub true_order: Option<i64>,
-    /// "gaussian" (default) or "t<df>" (e.g. "t3").
+    /// "gaussian" (default) or `t<df>` (e.g. "t3").
     pub innovations: Option<String>,
     /// Additive outliers: with probability `outlier_prob`, add N(0, outlier_sd²).
     pub outlier_prob: Option<f64>,
