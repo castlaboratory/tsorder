@@ -24,15 +24,29 @@ pub enum Criterion {
     Hq,
     /// Akaike (1969) final prediction error: `σ̂² (n+k)/(n-k)`. Not consistent.
     Fpe,
+    /// Parzen (1974, 1977) criterion autoregressive transfer function:
+    /// `CAT(k) = (1/n) Σ_{j=1..k} 1/σ̄²_j − 1/σ̄²_k` with the unbiased-adjusted
+    /// *relative* variances `σ̄²_j = n (σ̂²_j/σ̂²_0) / (n − j)` (innovation variance
+    /// divided by the sample variance, as in the ACF-based recursion Parzen uses),
+    /// and `CAT(0) = −(1 + 1/n)`. The normalisation makes the value dimensionless
+    /// and the argmin scale-invariant. Asymptotically equivalent to AIC; not consistent.
+    Cat,
+    /// Rissanen (1978) two-part minimum description length:
+    /// `(n/2) log σ̂² + (k/2) log n`. In this AR form every value is exactly
+    /// `BIC/2`, so the argmin coincides with BIC's; included so the benchmark
+    /// can report it under its own name.
+    Mdl,
 }
 
 impl Criterion {
-    pub const ALL: [Criterion; 5] = [
+    pub const ALL: [Criterion; 7] = [
         Criterion::Aic,
         Criterion::Aicc,
         Criterion::Bic,
         Criterion::Hq,
         Criterion::Fpe,
+        Criterion::Cat,
+        Criterion::Mdl,
     ];
 
     pub fn name(self) -> &'static str {
@@ -42,6 +56,8 @@ impl Criterion {
             Criterion::Bic => "BIC",
             Criterion::Hq => "HQ",
             Criterion::Fpe => "FPE",
+            Criterion::Cat => "CAT",
+            Criterion::Mdl => "MDL",
         }
     }
 
@@ -53,11 +69,14 @@ impl Criterion {
         k + 1
     }
 
-    /// Criterion value for an AR(`k`) fit with innovation variance `sigma2` on `n` observations.
-    pub fn value(self, sigma2: f64, k: usize, n: usize) -> f64 {
+    /// Criterion value for an AR(`k`) fit on `n` observations. `sigma2[j]` must hold the
+    /// innovation variance of the AR(`j`) fit for `j = 0..=k`; every criterion except CAT
+    /// reads only `sigma2[k]`, but CAT accumulates over the whole nested path.
+    pub fn value(self, sigma2: &[f64], k: usize, n: usize) -> f64 {
         let nf = n as f64;
         let kf = k as f64;
-        let ll = nf * sigma2.ln();
+        let s2 = sigma2[k];
+        let ll = nf * s2.ln();
         match self {
             Criterion::Aic => ll + 2.0 * kf,
             Criterion::Aicc => {
@@ -66,7 +85,16 @@ impl Criterion {
             }
             Criterion::Bic => ll + kf * nf.ln(),
             Criterion::Hq => ll + 2.0 * kf * nf.ln().ln().max(0.0),
-            Criterion::Fpe => sigma2 * (nf + kf) / (nf - kf).max(1.0),
+            Criterion::Fpe => s2 * (nf + kf) / (nf - kf).max(1.0),
+            Criterion::Cat => {
+                if k == 0 {
+                    return -(1.0 + 1.0 / nf);
+                }
+                // 1/σ̄²_j with σ̄²_j = n (σ̂²_j/σ̂²_0) / (n − j).
+                let inv_bar = |j: usize| (nf - j as f64) * sigma2[0] / (nf * sigma2[j]);
+                (1..=k).map(inv_bar).sum::<f64>() / nf - inv_bar(k)
+            }
+            Criterion::Mdl => 0.5 * (ll + kf * nf.ln()),
         }
     }
 }
@@ -94,11 +122,8 @@ pub fn ic_order(x: &[f64], criterion: Criterion, max_order: Option<usize>) -> Re
     let n = x.len();
     let k_max = max_order.unwrap_or_else(|| default_max_order(n));
     let l = levinson_from_series(x, k_max)?;
-    let values: Vec<f64> = l
-        .sigma2
-        .iter()
-        .enumerate()
-        .map(|(k, &s2)| criterion.value(s2, k, n))
+    let values: Vec<f64> = (0..l.sigma2.len())
+        .map(|k| criterion.value(&l.sigma2, k, n))
         .collect();
     let order = argmin(&values);
     Ok(IcResult {
@@ -109,7 +134,7 @@ pub fn ic_order(x: &[f64], criterion: Criterion, max_order: Option<usize>) -> Re
     })
 }
 
-/// All five criteria in one pass (shares the Levinson recursion).
+/// All criteria in one pass (shares the Levinson recursion).
 pub fn ic_order_all(x: &[f64], max_order: Option<usize>) -> Result<Vec<IcResult>> {
     let n = x.len();
     let k_max = max_order.unwrap_or_else(|| default_max_order(n));
@@ -117,11 +142,8 @@ pub fn ic_order_all(x: &[f64], max_order: Option<usize>) -> Result<Vec<IcResult>
     Ok(Criterion::ALL
         .iter()
         .map(|&c| {
-            let values: Vec<f64> = l
-                .sigma2
-                .iter()
-                .enumerate()
-                .map(|(k, &s2)| c.value(s2, k, n))
+            let values: Vec<f64> = (0..l.sigma2.len())
+                .map(|k| c.value(&l.sigma2, k, n))
                 .collect();
             IcResult {
                 criterion: c,

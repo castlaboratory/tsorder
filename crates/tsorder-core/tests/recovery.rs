@@ -228,9 +228,28 @@ fn sparse_ar_pacf_gives_order_but_long_ar_gives_support() {
 #[test]
 fn aicc_counts_variance_and_matches_formula() {
     // k=2, n=50: K=3, AICc = n log s2 + 2K + 2K(K+1)/(n-K-1) = ... + 6 + 24/46
-    let v = Criterion::Aicc.value(1.0, 2, 50);
+    let v = Criterion::Aicc.value(&[1.0, 1.0, 1.0], 2, 50);
     assert!((v - (6.0 + 24.0 / 46.0)).abs() < 1e-12);
     assert_eq!(Criterion::n_params(2), 3);
+}
+
+#[test]
+fn cat_and_mdl_recover_ar2_and_mdl_matches_bic() {
+    let x = sim_arma(&[1.2, -0.6], &[], 4000, 42);
+    // CAT is asymptotically equivalent to AIC (efficient, not consistent): on this
+    // series AIC, FPE and CAT all pick 3 while BIC/HQ/MDL pick the true 2.
+    let cat = ic_order(&x, Criterion::Cat, None).unwrap();
+    let aic = ic_order(&x, Criterion::Aic, None).unwrap();
+    assert_eq!(cat.order, aic.order, "CAT gave {}", cat.order);
+    assert!((2..=3).contains(&cat.order), "CAT gave {}", cat.order);
+    let mdl = ic_order(&x, Criterion::Mdl, None).unwrap();
+    let bic = ic_order(&x, Criterion::Bic, None).unwrap();
+    assert_eq!(mdl.order, bic.order);
+    for (m, b) in mdl.values.iter().zip(&bic.values) {
+        assert!((2.0 * m - b).abs() < 1e-9, "MDL is not BIC/2");
+    }
+    // CAT(0) is Parzen's convention -(1 + 1/n).
+    assert!((cat.values[0] + 1.0 + 1.0 / 4000.0).abs() < 1e-12);
 }
 
 #[test]
