@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-23 — benchmark round 1 (AR/MA)
+- `tsorder-bench`: TOML-driven runner (rayon, fixed per-triple seeds, lossless
+  aggregated CSV output), designs and R analysis for Q1-Q3, Q5-Q7.
+- Headline results: poly-log memory `⌈2 log n⌉` dominates `n^0.4`/`n^0.3`
+  (and is the window the available theory covers); ensembles never beat their
+  best member on AR/MA; the robust PACF wins big under additive outliers at
+  moderate n but its selection degrades for very large n (bias vs shrinking
+  threshold); one-step prediction differences across selectors are ≤ 1 %.
+
 ## 2026-10-23 — repository
 - Published at `castlaboratory/tsorder` with CI (fmt, clippy, tests on linux/macos/windows,
   docs, MSRV 1.81) and a GitHub Pages site (`site/` landing page + rustdoc under `/api`).
