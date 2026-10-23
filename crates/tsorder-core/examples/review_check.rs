@@ -57,7 +57,7 @@ fn main() {
     println!("fixed(-5): ordem {} tau {}", f.order, f.tau);
     // Hwang condition p_n/(n eta^2) with eta = tau/sqrt(n)
     for n in [100usize, 1000, 10000, 100000] {
-        let p = default_memory(n);
+        let p = power_memory(n);
         let tau = Threshold::default().value(n, p);
         println!(
             "n={n} p_n={p} tau={tau:.2}  p_n/(n eta^2)=p_n/tau^2={:.2}",

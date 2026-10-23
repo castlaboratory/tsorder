@@ -110,10 +110,15 @@ pub fn polylog_memory(n: usize, c: f64) -> usize {
     p.clamp(2, (n / 4).max(2))
 }
 
-/// Default growing memory `p_n = floor(n^0.4)`, clamped to `[2, n/4]`.
-/// Satisfies `p_n²/n → 0` (Hwang) but not `p_n³/n → 0` (Berk 1974 / Lewis–Reinsel 1985
-/// uniform results); `n^0.3` would satisfy both. Revisit after the benchmark (D-06).
-pub fn default_memory(n: usize) -> usize {
+/// Power-law growing memory `p_n = floor(n^0.4)`, clamped to `[2, n/4]` —
+/// the Fine–Hwang-style window. Satisfies `p_n²/n → 0` (Hwang) but not
+/// `p_n³/n → 0` (Berk 1974 / Lewis–Reinsel 1985 uniform results). It was the
+/// package default until the benchmark showed the poly-log window dominating
+/// it (notably on seasonal AR, where `n^0.4 < 12` until `n ≈ 800`); the
+/// default is now [`polylog_memory`]`(n, 2.0)` via
+/// [`crate::Statistic::default_memory`]. Kept as an option and for the
+/// benchmark.
+pub fn power_memory(n: usize) -> usize {
     let p = (n as f64).powf(0.4).floor() as usize;
     p.clamp(2, (n / 4).max(2))
 }
@@ -149,7 +154,7 @@ mod tests {
     #[test]
     fn polylog_memory_grows_slowly() {
         assert_eq!(polylog_memory(100, 2.0), 10);
-        assert!(polylog_memory(10_000, 2.0) < default_memory(10_000));
+        assert!(polylog_memory(10_000, 2.0) < power_memory(10_000));
         assert!(polylog_memory(10, 2.0) >= 2);
     }
 }

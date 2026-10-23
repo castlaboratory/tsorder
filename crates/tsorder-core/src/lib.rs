@@ -37,7 +37,7 @@ pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_ps
 pub use select::{
     ensemble_order, fh_order, EnsembleResult, EnsembleRule, FhConfig, FhResult, Statistic,
 };
-pub use threshold::{default_memory, polylog_memory, Threshold};
+pub use threshold::{polylog_memory, power_memory, Threshold};
 
 /// Library error type.
 #[derive(Debug, Clone, PartialEq)]

@@ -7,7 +7,7 @@
 use crate::acov::{acf, autocovariance, bartlett_se};
 use crate::levinson::levinson;
 use crate::linalg::ols;
-use crate::threshold::{default_memory, Threshold};
+use crate::threshold::{polylog_memory, Threshold};
 use crate::{check_input, Result};
 
 /// Which partial description Σ̂ of the process to threshold.
@@ -85,14 +85,17 @@ impl Statistic {
     }
 
     /// Default growing memory `p_n` used when [`FhConfig::memory`] is `None`:
-    /// `⌊n^0.4⌋` for most statistics, but the short poly-log window for
-    /// [`Statistic::PacfRobust`] (its per-lag estimation errors are nearly
+    /// the poly-log window `⌈2 log n⌉` ([`polylog_memory`]), which dominated
+    /// the power rules in the benchmark (it reaches a seasonal AR(12) from
+    /// `n = 400`, where `⌊n^0.4⌋` cannot) and is the window covered by the
+    /// uniform LIL bounds for autocovariances. [`Statistic::PacfRobust`] uses
+    /// the shorter `⌈log n⌉` (its per-lag estimation errors are nearly
     /// independent across lags, so long memories drift out of positive
     /// definiteness and the deep PACF path turns into boundary noise).
     pub fn default_memory(self, n: usize) -> usize {
         match self {
-            Statistic::PacfRobust => crate::threshold::polylog_memory(n, 1.0),
-            _ => default_memory(n),
+            Statistic::PacfRobust => polylog_memory(n, 1.0),
+            _ => polylog_memory(n, 2.0),
         }
     }
 
@@ -280,6 +283,11 @@ pub struct EnsembleResult {
 }
 
 /// Run several Fine–Hwang configurations and combine them.
+///
+/// ⚠️ **Scheduled for removal before 1.0**: in the AR/MA benchmark round the
+/// ensemble never beat its best member (max gain +0.01, negative on MA); the
+/// final verdict waits for the ARMA round, where a genuine mode-over-families
+/// rule (García-Hiernaux et al. 2012) can be tested.
 ///
 /// Design note: the ensemble is *not* expected to beat the best single
 /// statistic in the well-specified case; its purpose is insurance under misspecification

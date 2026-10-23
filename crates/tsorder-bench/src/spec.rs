@@ -2,8 +2,8 @@
 
 use serde::Deserialize;
 use tsorder_core::{
-    default_memory, ensemble_order, fh_order, ic_order_with, polylog_memory, Criterion,
-    EnsembleRule, Error, FhConfig, IcMethod, Statistic, Threshold,
+    ensemble_order, fh_order, ic_order_with, polylog_memory, Criterion, EnsembleRule, Error,
+    FhConfig, IcMethod, Statistic, Threshold,
 };
 
 #[derive(Deserialize)]
@@ -114,7 +114,7 @@ impl Est {
     fn memory(&self, n: usize, stat: Statistic) -> Option<usize> {
         let m = match self.memory.as_deref()? {
             "n03" => ((n as f64).powf(0.3).floor() as usize).max(2),
-            "n04" => default_memory(n),
+            "n04" => tsorder_core::power_memory(n),
             "sqrt2" => ((2.0 * (n as f64).sqrt()).floor() as usize).min(n / 4),
             "log2" => polylog_memory(n, 2.0),
             "log4" => polylog_memory(n, 4.0),

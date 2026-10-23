@@ -238,12 +238,12 @@
 
 <span class="c-cmt">// studentized PACF vs threshold</span>
 <span class="c-ok">BIC order = 2</span>
-<span class="c-ok">FH  order = 2</span>  (p_n = 10, tau = 3.00)
+<span class="c-ok">FH  order = 2</span>  (p_n = 12, tau = 3.00)
 |t_1| = 14.13  <span class="c-ok">✓ keep</span>
 |t_2| = 11.00  <span class="c-ok">✓ keep</span>
 |t_3| =  0.53  clip
    ⋮
-|t_10| = 1.36  clip</code></pre>
+|t_12| = 1.48  clip</code></pre>
       </div>
     </div>
   </section>
@@ -263,7 +263,7 @@
       <div class="pill-h">Statistics</div>
       <div class="pills"><span class="pill">Pacf</span><span class="pill">AcfBartlett</span><span class="pill">InversePacf</span><span class="pill">JirakBand</span><span class="pill">PacfRobust</span><span class="pill">LongArYw</span><span class="pill">LongArOls</span><span class="pill">Acf</span></div>
       <div class="pill-h">Thresholds &amp; memory</div>
-      <div class="pills"><span class="pill alt2">BicLike{c}</span><span class="pill alt2">Lil{c}</span><span class="pill alt2">MaxOfK{c}</span><span class="pill alt2">Gumbel{α}</span><span class="pill alt2">Fixed</span><span class="pill alt2">p_n = ⌊n^0.4⌋</span><span class="pill alt2">p_n = ⌈c·log n⌉</span></div>
+      <div class="pills"><span class="pill alt2">BicLike{c}</span><span class="pill alt2">Lil{c}</span><span class="pill alt2">MaxOfK{c}</span><span class="pill alt2">Gumbel{α}</span><span class="pill alt2">Fixed</span><span class="pill alt2">p_n = ⌈2·log n⌉ (default)</span><span class="pill alt2">p_n = ⌊n^0.4⌋</span></div>
     </div>
   </section>
 
@@ -273,7 +273,7 @@
       <p class="sub">Simulated AR(2) with φ = (1.2, −0.6) and n = 400. The studentized partial autocorrelations at lags 1 and 2 tower over the threshold τₙ = 3.0; everything after them is what white noise produces. The last crossing gives the order — the same answer BIC reaches by scoring all eleven candidate models.</p>
       <div class="viz">
         <h3>Studentized PACF and the Fine–Hwang threshold</h3>
-        <p class="cap">|PACF(k)|·√n for k = 1…p_n, with p_n = ⌊400^0.4⌋ = 10 and the default threshold τₙ = √(1.5 log n).</p>
+        <p class="cap">|PACF(k)|·√n for k = 1…p_n, with the default memory p_n = ⌈2 log 400⌉ = 12 and the default threshold τₙ = √(1.5 log n).</p>
         <div class="legend">
           <span><i class="key k1"></i>Kept (above τₙ)</span>
           <span><i class="key k1d"></i>Clipped</span>
@@ -390,8 +390,8 @@ println!(<span class="c-str">"BIC {} / FH {}"</span>, bic.order, fh.order);
 (() => {
   // Output of `cargo run --release --example pacf_path` (AR(2), phi = (1.2, -0.6), n = 400, seed 42).
   const DATA = {
-    tau: 2.998, order: 2, bic: 2, p_n: 10,
-    t: [14.128, 11.003, 0.526, 0.471, 0.132, 0.107, 0.682, 0.608, 0.929, 1.358]
+    tau: 2.998, order: 2, bic: 2, p_n: 12,
+    t: [14.128, 11.003, 0.526, 0.471, 0.132, 0.107, 0.682, 0.608, 0.929, 1.358, 0.395, 1.480]
   };
   const NS = "http://www.w3.org/2000/svg";
   const W = 960, H = 360, M = { top: 18, right: 24, bottom: 36, left: 52 };
