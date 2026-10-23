@@ -8,6 +8,7 @@
 //! composite Simpson with an oscillation-aware step.
 
 /// Natural log of the gamma function (Lanczos, g = 7, ~15 digits).
+#[allow(clippy::excessive_precision)] // published Lanczos coefficients, kept verbatim
 pub fn ln_gamma(x: f64) -> f64 {
     const G: [f64; 9] = [
         0.99999999999980993,
