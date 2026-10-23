@@ -198,6 +198,38 @@ fn eacf_identifies_arma_orders() {
 }
 
 #[test]
+fn hr_erratum_pass_fixes_near_circle_overestimation() {
+    // MA(1) with theta = -0.9 (zero at 0.9): the regime where the 1983
+    // correction says single-pass stage 2 overestimates. The erratum pass
+    // must be right distinctly more often.
+    let mut ok1 = 0;
+    let mut ok2 = 0;
+    for seed in 0..20 {
+        let x = sim::arma(&[], &[-0.9], 2000, 1200 + seed);
+        let h1 = hannan_rissanen(
+            &x,
+            HrConfig {
+                erratum_pass: false,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let h2 = hannan_rissanen(&x, HrConfig::default()).unwrap();
+        if (h1.p, h1.q) == (0, 1) {
+            ok1 += 1;
+        }
+        if (h2.p, h2.q) == (0, 1) {
+            ok2 += 1;
+        }
+    }
+    assert!(ok2 >= 16, "erratum pass correct only {ok2}/20");
+    assert!(
+        ok2 > ok1,
+        "erratum pass ({ok2}) not better than single pass ({ok1})"
+    );
+}
+
+#[test]
 fn hannan_rissanen_selects_and_estimates_arma11() {
     let mut ok = 0;
     for seed in 0..5 {
