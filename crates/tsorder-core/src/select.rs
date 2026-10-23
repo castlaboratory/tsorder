@@ -27,10 +27,15 @@ pub enum Statistic {
     AcfBartlett,
     /// Inverse PACF (MA order): PACF of the inverse process, computed from the
     /// inverse autocovariances of the long Yule–Walker AR(`p_n`) fit (the
-    /// autoregressive estimator of Cleveland 1972). By spectral duality the
-    /// inverse of an MA(q) is an AR(q), so the inverse PACF cuts off at `q`.
-    /// `se = 1/sqrt(n)` (white-noise asymptotics; the general null theory is
-    /// Bhansali 1983).
+    /// autoregressive estimator of Cleveland 1972; the statistic itself is
+    /// Bhansali 1983, *J. Multivariate Anal.* 13 — this is exactly his
+    /// estimator). An MA(q) process has inverse PACF zero beyond `q` (his
+    /// Theorem 3.1), and his Theorem 4.2 gives the exact published null:
+    /// beyond `q` the estimates are asymptotically iid `N(0, 1/n)` and
+    /// independent of the earlier lags, so `se = 1/sqrt(n)` is the exact
+    /// studentisation (conditions: iid innovations with finite fourth moment,
+    /// invertibility, and a long-AR window growing at least like a multiple
+    /// of `log n` but with `p_n³/n → 0` — the defaults qualify).
     InversePacf,
     /// Yule–Walker long-AR coefficients with the exact null studentization of
     /// Jirak (2012, Thm 2.2): `se_i = sqrt(γ̂*_ii · σ̂²(p_n) / n)` where `γ̂*_ii`
