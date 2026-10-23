@@ -177,6 +177,7 @@ fn hankel_rank_test_recovers_and_is_calibrated() {
 }
 
 #[test]
+#[allow(clippy::type_complexity)]
 fn eacf_identifies_arma_orders() {
     let cases: [(&[f64], &[f64], (usize, usize)); 4] = [
         (&[], &[], (0, 0)),
