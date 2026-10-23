@@ -1,48 +1,10 @@
 //! Integration tests: every estimator must recover the order of a long,
-//! well-separated simulated series. Uses a tiny xorshift + Box–Muller RNG so the
-//! crate stays dependency-free.
+//! well-separated simulated series. The generator is the crate's own `sim`
+//! module (xorshift + Box–Muller), enabled here through the self
+//! dev-dependency.
 
+use tsorder_core::sim::arma as sim_arma;
 use tsorder_core::*;
-
-struct Rng(u64);
-impl Rng {
-    fn next_u64(&mut self) -> u64 {
-        let mut x = self.0;
-        x ^= x << 13;
-        x ^= x >> 7;
-        x ^= x << 17;
-        self.0 = x;
-        x
-    }
-    fn uniform(&mut self) -> f64 {
-        (self.next_u64() >> 11) as f64 / (1u64 << 53) as f64
-    }
-    fn normal(&mut self) -> f64 {
-        let u1 = self.uniform().max(1e-300);
-        let u2 = self.uniform();
-        (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos()
-    }
-}
-
-fn sim_arma(phi: &[f64], theta: &[f64], n: usize, seed: u64) -> Vec<f64> {
-    let burn = 500;
-    let mut rng = Rng(seed);
-    let total = n + burn;
-    let e: Vec<f64> = (0..total).map(|_| rng.normal()).collect();
-    let mut x = vec![0.0; total];
-    let start = phi.len().max(theta.len());
-    for t in start..total {
-        let mut v = e[t];
-        for (j, p) in phi.iter().enumerate() {
-            v += p * x[t - j - 1];
-        }
-        for (j, th) in theta.iter().enumerate() {
-            v += th * e[t - j - 1];
-        }
-        x[t] = v;
-    }
-    x[burn..].to_vec()
-}
 
 #[test]
 fn ar2_recovered_by_all_ar_statistics_and_bic() {

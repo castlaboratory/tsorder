@@ -239,11 +239,11 @@
 <span class="c-cmt">// studentized PACF vs threshold</span>
 <span class="c-ok">BIC order = 2</span>
 <span class="c-ok">FH  order = 2</span>  (p_n = 10, tau = 3.00)
-|t_1| = 14.46  <span class="c-ok">✓ keep</span>
-|t_2| = 11.59  <span class="c-ok">✓ keep</span>
-|t_3| =  0.19  clip
+|t_1| = 14.13  <span class="c-ok">✓ keep</span>
+|t_2| = 11.00  <span class="c-ok">✓ keep</span>
+|t_3| =  0.53  clip
    ⋮
-|t_10| = 1.06  clip</code></pre>
+|t_10| = 1.36  clip</code></pre>
       </div>
     </div>
   </section>
@@ -253,7 +253,7 @@
       <h2>Two families, one honest comparison</h2>
       <p class="sub">Information criteria score every candidate order; threshold estimators keep the last lag whose statistic survives a vanishing cut-off. <code>tsorder</code> computes both from one pass over the data, so they can be compared on equal footing — in accuracy and in time.</p>
       <div class="grid f3">
-        <div class="card"><div class="ic">🧮</div><h3>One data path</h3><p>Sample autocovariance → Levinson–Durbin recursion. AIC, AICc, BIC, HQ and FPE, the PACF and the long AR fit all come from the same O(K²) pass.</p></div>
+        <div class="card"><div class="ic">🧮</div><h3>One data path</h3><p>Sample autocovariance (by FFT for large lags) → Levinson–Durbin recursion. AIC, AICc, BIC, HQ, FPE, CAT and MDL, the PACF and the long AR fit all come from the same O(K²) pass — with Burg and conditional-OLS variants a flag away.</p></div>
         <div class="card"><div class="ic">📏</div><h3>Studentized by construction</h3><p>The raw Fine–Hwang threshold is not scale-invariant and degrades with n. Every statistic here returns its null standard error, and every threshold lives on the studentized scale.</p></div>
         <div class="card"><div class="ic">🔌</div><h3>Pluggable statistics</h3><p>PACF for AR, Bartlett-studentized ACF for MA, long-AR coefficients by Yule–Walker or OLS. The statistic and the cut-off rule are orthogonal axes of the API.</p></div>
         <div class="card"><div class="ic">🎚️</div><h3>Calibrated thresholds</h3><p>BIC-like, iterated-logarithm, max-of-K and Gumbel rules. The Gumbel threshold controls the family-wise over-selection level: α = 5% means ≈ 5% false positives on white noise, verified in the tests.</p></div>
@@ -389,7 +389,7 @@ println!(<span class="c-str">"BIC {} / FH {}"</span>, bic.order, fh.order);
   // Output of `cargo run --release --example pacf_path` (AR(2), phi = (1.2, -0.6), n = 400, seed 42).
   const DATA = {
     tau: 2.998, order: 2, bic: 2, p_n: 10,
-    t: [14.457, 11.586, 0.193, 0.481, 0.197, 0.134, 0.359, 0.559, 1.403, 1.055]
+    t: [14.128, 11.003, 0.526, 0.471, 0.132, 0.107, 0.682, 0.608, 0.929, 1.358]
   };
   const NS = "http://www.w3.org/2000/svg";
   const W = 960, H = 360, M = { top: 18, right: 24, bottom: 36, left: 52 };

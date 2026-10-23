@@ -25,6 +25,8 @@ pub mod criteria;
 pub mod levinson;
 pub mod linalg;
 pub mod select;
+#[cfg(feature = "sim")]
+pub mod sim;
 pub mod threshold;
 
 pub use acov::{acf, autocovariance};

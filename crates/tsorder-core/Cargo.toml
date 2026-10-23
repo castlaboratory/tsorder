@@ -17,8 +17,16 @@ categories = ["mathematics", "science"]
 name = "tsorder_core"
 path = "src/lib.rs"
 
+[features]
+# Simulation utilities (xorshift RNG, ARMA generator with t innovations,
+# outliers, observation noise) for tests and benchmarks.
+sim = []
+
 [dependencies]
 # Deliberately none: the core must build everywhere the R (extendr) and
 # Python (PyO3/maturin) bindings build.
 
 [dev-dependencies]
+# Self-dependency so tests and examples see the `sim` feature without
+# forcing it on downstream users.
+tsorder-core = { path = ".", features = ["sim"] }
