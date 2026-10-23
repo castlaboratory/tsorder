@@ -25,15 +25,23 @@ pub enum Statistic {
     Acf,
     /// Autocorrelation studentized by Bartlett's formula (MA order). **Recommended for MA.**
     AcfBartlett,
+    /// Inverse PACF (MA order): PACF of the inverse process, computed from the
+    /// inverse autocovariances of the long Yule–Walker AR(`p_n`) fit (the
+    /// autoregressive estimator of Cleveland 1972). By spectral duality the
+    /// inverse of an MA(q) is an AR(q), so the inverse PACF cuts off at `q`.
+    /// `se = 1/sqrt(n)` (white-noise asymptotics; the general null theory is
+    /// Bhansali 1983).
+    InversePacf,
 }
 
 impl Statistic {
-    pub const ALL: [Statistic; 5] = [
+    pub const ALL: [Statistic; 6] = [
         Statistic::Pacf,
         Statistic::LongArYw,
         Statistic::LongArOls,
         Statistic::Acf,
         Statistic::AcfBartlett,
+        Statistic::InversePacf,
     ];
 
     pub fn name(self) -> &'static str {
@@ -43,6 +51,7 @@ impl Statistic {
             Statistic::LongArOls => "long_ar_ols",
             Statistic::Acf => "acf",
             Statistic::AcfBartlett => "acf_bartlett",
+            Statistic::InversePacf => "inverse_pacf",
         }
     }
 
@@ -50,7 +59,7 @@ impl Statistic {
     pub fn target(self) -> &'static str {
         match self {
             Statistic::Pacf | Statistic::LongArYw | Statistic::LongArOls => "AR",
-            Statistic::Acf | Statistic::AcfBartlett => "MA",
+            Statistic::Acf | Statistic::AcfBartlett | Statistic::InversePacf => "MA",
         }
     }
 
@@ -95,6 +104,15 @@ impl Statistic {
                 let r = acf(x, p_n)?;
                 let se = bartlett_se(&r, n);
                 Ok((r[1..].to_vec(), se[1..].to_vec()))
+            }
+            Statistic::InversePacf => {
+                // Long AR fit, its inverse autocovariances (an MA(p_n) sequence,
+                // so PSD and safe for Levinson), then the PACF of that sequence.
+                let r = autocovariance(x, p_n)?;
+                let l = levinson(&r)?;
+                let vi = crate::acov::inverse_acov_from_ar(&l.phi_last);
+                let li = levinson(&vi)?;
+                Ok((li.pacf, root_n_se))
             }
         }
     }

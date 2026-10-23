@@ -48,6 +48,20 @@ fn ma2_recovered_by_bartlett_acf() {
 }
 
 #[test]
+fn ma2_recovered_by_inverse_pacf() {
+    let x = sim_arma(&[], &[0.6, 0.3], 4000, 99);
+    let r = fh_order(
+        &x,
+        FhConfig {
+            statistic: Statistic::InversePacf,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(r.order, 2, "inverse PACF gave {}", r.order);
+}
+
+#[test]
 fn white_noise_gives_order_zero() {
     let x = sim_arma(&[], &[], 2000, 3);
     let r = fh_order(&x, FhConfig::default()).unwrap();

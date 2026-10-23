@@ -98,6 +98,26 @@ fn fft(re: &mut [f64], im: &mut [f64], inverse: bool) {
     }
 }
 
+/// Inverse autocovariances of a fitted AR(p), up to a `1/σ²` factor that
+/// cancels in any correlation: for `x_t = Σ φ_j x_{t-j} + e_t`,
+/// `vi(0) = 1 + Σ φ_i²` and `vi(k) = −φ_k + Σ_{i=1}^{p−k} φ_i φ_{i+k}`.
+/// This is Cleveland's (1972) autoregressive estimator of the inverse
+/// autocovariance function (his §4, in the α = −φ sign convention), and it is
+/// a genuine MA(p) autocovariance sequence, hence positive semi-definite.
+pub fn inverse_acov_from_ar(phi: &[f64]) -> Vec<f64> {
+    let p = phi.len();
+    let mut vi = Vec::with_capacity(p + 1);
+    vi.push(1.0 + phi.iter().map(|v| v * v).sum::<f64>());
+    for k in 1..=p {
+        let mut s = -phi[k - 1];
+        for i in 1..=p - k {
+            s += phi[i - 1] * phi[i + k - 1];
+        }
+        vi.push(s);
+    }
+    vi
+}
+
 /// Sample autocorrelation for lags `0..=max_lag` (`acf[0] == 1`).
 pub fn acf(x: &[f64], max_lag: usize) -> Result<Vec<f64>> {
     let r = autocovariance(x, max_lag)?;
@@ -166,6 +186,22 @@ mod tests {
         // And the public function agrees with the direct sums it replaced.
         let public = autocovariance(&x, 120).unwrap();
         assert!((public[120] - direct[120]).abs() < 1e-12 * direct[0].abs());
+    }
+
+    #[test]
+    fn inverse_acov_matches_cleveland_example_1() {
+        // Cleveland (1972), Example 1 / Display 1: X_t + .7 X_{t-1} + .4 X_{t-6} = R_t.
+        // His alpha = -phi; reported inverse autocorrelations (x100): 42 at lag 1,
+        // 17 at lag 5, 24 at lag 6, 0 elsewhere.
+        let phi = [-0.7, 0.0, 0.0, 0.0, 0.0, -0.4];
+        let vi = inverse_acov_from_ar(&phi);
+        let ri: Vec<f64> = vi.iter().map(|v| v / vi[0]).collect();
+        assert!((ri[1] - 0.7 / 1.65).abs() < 1e-12); // 0.4242 -> 42
+        assert!((ri[5] - 0.28 / 1.65).abs() < 1e-12); // 0.1697 -> 17
+        assert!((ri[6] - 0.4 / 1.65).abs() < 1e-12); // 0.2424 -> 24
+        for k in [2, 3, 4] {
+            assert!(ri[k].abs() < 1e-12, "ri[{k}] = {}", ri[k]);
+        }
     }
 
     #[test]
