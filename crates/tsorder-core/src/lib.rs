@@ -32,7 +32,10 @@ pub mod sim;
 pub mod threshold;
 
 pub use acov::{acf, autocovariance};
-pub use cancorr::{canonical_correlations, canonical_correlations_from_acov, Cancorr};
+pub use cancorr::{
+    canonical_correlations, canonical_correlations_from_acov, canonical_correlations_stacked,
+    svc_order, Cancorr, SvcConfig, SvcPenalty, SvcResult,
+};
 pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};
