@@ -65,10 +65,13 @@ let e = ensemble_order(&x, &[
 
 - Core: AIC/AICc/BIC/HQ/FPE/CAT/MDL over Yule–Walker, Burg or conditional-OLS fits
   (`IcMethod`); Fine–Hwang thresholding with `Pacf`, `LongArYw`, `LongArOls`, `Acf`,
-  `AcfBartlett`; thresholds `BicLike`, `Lil`, `MaxOfK`, `Gumbel`, `Fixed`; memory `n^0.4`
-  or poly-log; majority/median ensembles; autocovariance by FFT for large lags; a `sim`
-  feature with the benchmark's ARMA generator (t innovations, outliers, observation
-  noise). Clippy-clean, no dependencies, MSRV 1.81.
+  `AcfBartlett`, `InversePacf` (Cleveland's inverse ACF route), `JirakBand` (exact
+  Jirak-2012 studentization) and the experimental `PacfRobust` (Ma–Genton Q_n
+  autocorrelations, 25 % breakdown); thresholds `BicLike`, `Lil`, `MaxOfK`, `Gumbel`,
+  `Fixed`; memory `n^0.4` or poly-log; majority/median ensembles; autocovariance by FFT
+  for large lags; the Q_n scale estimator (O(n log n), matches R's `robustbase::Qn`);
+  a `sim` feature with the benchmark's ARMA generator (t innovations, outliers,
+  observation noise). Clippy-clean, no dependencies, MSRV 1.81.
 - Theory positioning: AR thresholding is Jirak (2012); canonical correlations with growing
   window is Bauer (2001); Hankel rank tests are Robin & Smith (2000) and Camba-Méndez &
   Kapetanios (2001). `tsorder` implements all of them under one umbrella; the open questions

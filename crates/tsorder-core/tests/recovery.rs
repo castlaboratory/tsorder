@@ -283,6 +283,61 @@ fn gumbel_level_is_controlled_on_white_noise() {
 }
 
 #[test]
+fn robust_pacf_survives_additive_outliers_where_plain_pacf_dies() {
+    // AR(2) with 5 % additive outliers of magnitude 10 (~5 sd). The classical
+    // PACF is destroyed (it never finds order 2 in 10 tries); the Q_n-based
+    // robust PACF keeps working on most replications.
+    let cfg = sim::ArmaSim {
+        phi: &[1.2, -0.6],
+        additive_outliers: Some(sim::Contamination {
+            prob: 0.05,
+            magnitude: 10.0,
+        }),
+        ..Default::default()
+    };
+    let mut plain_ok = 0;
+    let mut robust_ok = 0;
+    for seed in 0..10 {
+        let x = cfg.simulate(3000, 5000 + seed).unwrap();
+        if fh_order(&x, FhConfig::default()).unwrap().order == 2 {
+            plain_ok += 1;
+        }
+        let r = fh_order(
+            &x,
+            FhConfig {
+                statistic: Statistic::PacfRobust,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        if r.order == 2 {
+            robust_ok += 1;
+        }
+    }
+    assert_eq!(
+        plain_ok, 0,
+        "plain PACF unexpectedly survived contamination"
+    );
+    assert!(robust_ok >= 8, "robust PACF correct only {robust_ok}/10");
+    // And on clean data it still recovers the order.
+    let clean = sim::ArmaSim {
+        phi: &[1.2, -0.6],
+        ..Default::default()
+    }
+    .simulate(3000, 42)
+    .unwrap();
+    let r = fh_order(
+        &clean,
+        FhConfig {
+            statistic: Statistic::PacfRobust,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(r.order, 2);
+}
+
+#[test]
 fn jirak_band_recovers_ar2_and_sparse_support() {
     let x = sim_arma(&[1.2, -0.6], &[], 4000, 42);
     let r = fh_order(

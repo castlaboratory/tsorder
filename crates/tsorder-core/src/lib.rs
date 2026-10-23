@@ -24,6 +24,7 @@ pub mod acov;
 pub mod criteria;
 pub mod levinson;
 pub mod linalg;
+pub mod robust;
 pub mod select;
 #[cfg(feature = "sim")]
 pub mod sim;
@@ -32,6 +33,7 @@ pub mod threshold;
 pub use acov::{acf, autocovariance};
 pub use criteria::{ic_order, ic_order_with, Criterion, IcMethod, IcResult};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
+pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};
 pub use select::{
     ensemble_order, fh_order, EnsembleResult, EnsembleRule, FhConfig, FhResult, Statistic,
 };

@@ -43,10 +43,24 @@ pub enum Statistic {
     /// it is his consistent estimator q̂⁽¹⁾. Upgrades [`Statistic::LongArYw`],
     /// whose `1/sqrt(n)` ignores the correlation structure.
     JirakBand,
+    /// **Experimental.** PACF computed from the Q_n-based robust
+    /// autocorrelations of Ma & Genton (2000) (the bounded ratio form, whose
+    /// shared denominator cancels the additive-outlier bias), with the PSD
+    /// shrinking repair as a safety net ([`crate::robust`]). 25 % breakdown
+    /// point against additive outliers, where the ordinary PACF has none.
+    ///
+    /// Unlike the classical PACF this statistic is *not* self-studentized:
+    /// its null dispersion grows with the serial dependence of the process
+    /// (measured by simulation: ≈1.1/√n on white noise, ≈2.0/√n on a strongly
+    /// correlated AR(2), ≈2.4/√n on an MA(2)). `se = 2.0/sqrt(n)` is a
+    /// conservative empirical compromise pending exact theory, and the default
+    /// memory is the short poly-log window (per-lag estimation errors are
+    /// independent across lags, so long memories break positive definiteness).
+    PacfRobust,
 }
 
 impl Statistic {
-    pub const ALL: [Statistic; 7] = [
+    pub const ALL: [Statistic; 8] = [
         Statistic::Pacf,
         Statistic::LongArYw,
         Statistic::LongArOls,
@@ -54,6 +68,7 @@ impl Statistic {
         Statistic::AcfBartlett,
         Statistic::InversePacf,
         Statistic::JirakBand,
+        Statistic::PacfRobust,
     ];
 
     pub fn name(self) -> &'static str {
@@ -65,15 +80,30 @@ impl Statistic {
             Statistic::AcfBartlett => "acf_bartlett",
             Statistic::InversePacf => "inverse_pacf",
             Statistic::JirakBand => "jirak_band",
+            Statistic::PacfRobust => "pacf_robust",
+        }
+    }
+
+    /// Default growing memory `p_n` used when [`FhConfig::memory`] is `None`:
+    /// `⌊n^0.4⌋` for most statistics, but the short poly-log window for
+    /// [`Statistic::PacfRobust`] (its per-lag estimation errors are nearly
+    /// independent across lags, so long memories drift out of positive
+    /// definiteness and the deep PACF path turns into boundary noise).
+    pub fn default_memory(self, n: usize) -> usize {
+        match self {
+            Statistic::PacfRobust => crate::threshold::polylog_memory(n, 1.0),
+            _ => default_memory(n),
         }
     }
 
     /// Which model family's order this statistic targets.
     pub fn target(self) -> &'static str {
         match self {
-            Statistic::Pacf | Statistic::LongArYw | Statistic::LongArOls | Statistic::JirakBand => {
-                "AR"
-            }
+            Statistic::Pacf
+            | Statistic::LongArYw
+            | Statistic::LongArOls
+            | Statistic::JirakBand
+            | Statistic::PacfRobust => "AR",
             Statistic::Acf | Statistic::AcfBartlett | Statistic::InversePacf => "MA",
         }
     }
@@ -146,6 +176,15 @@ impl Statistic {
                 let se = diag.iter().map(|d| (d * sigma2 / nf).sqrt()).collect();
                 Ok((l.phi_last, se))
             }
+            Statistic::PacfRobust => {
+                let r = crate::robust::robust_autocorrelation(x, p_n)?;
+                let r = crate::robust::shrink_to_psd(&r)?;
+                let l = levinson(&r)?;
+                // Monte Carlo null calibration pending exact theory (see the
+                // enum documentation).
+                let se = vec![2.0 / (n as f64).sqrt(); p_n];
+                Ok((l.pacf, se))
+            }
         }
     }
 }
@@ -155,7 +194,8 @@ impl Statistic {
 pub struct FhConfig {
     pub statistic: Statistic,
     pub threshold: Threshold,
-    /// Growing memory `p_n`; `None` → [`default_memory`].
+    /// Growing memory `p_n`; `None` → the statistic's default
+    /// ([`Statistic::default_memory`]).
     pub memory: Option<usize>,
 }
 
@@ -189,7 +229,9 @@ pub struct FhResult {
 pub fn fh_order(x: &[f64], config: FhConfig) -> Result<FhResult> {
     let n = x.len();
     config.threshold.validate()?;
-    let p_n = config.memory.unwrap_or_else(|| default_memory(n));
+    let p_n = config
+        .memory
+        .unwrap_or_else(|| config.statistic.default_memory(n));
     if p_n < 1 {
         return Err(crate::Error::Invalid("memory p_n must be >= 1"));
     }
