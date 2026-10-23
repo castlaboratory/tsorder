@@ -362,7 +362,8 @@ println!(<span class="c-str">"BIC {} / FH {}"</span>, bic.order, fh.order);
             <tr><td>Q_n scale and robust autocorrelations</td><td>Rousseeuw &amp; Croux (1993); Croux &amp; Rousseeuw (1992); Ma &amp; Genton (2000)</td></tr>
             <tr><td>Innovation variances &amp; criteria conventions</td><td>R's <code>stats::ar.yw</code>; AICc as in <code>forecast</code></td></tr>
             <tr><td>Ensemble (model by consensus)</td><td>García-Hiernaux, Jerez &amp; Casals (2012)</td></tr>
-            <tr><td>Planned — ARMA via canonical correlations &amp; Hankel rank</td><td>Bauer (2001); Robin &amp; Smith (2000); Camba-Méndez &amp; Kapetanios (2001)</td></tr>
+            <tr><td>McMillan degree: SVC via canonical correlations (Table 1 reproduced), Hankel SVT, sequential rank test</td><td>Bauer (2001); Zheng, Jedra &amp; Proutière (2025); Baram &amp; Porat (1988); Robin &amp; Smith (2000)</td></tr>
+            <tr><td>ARMA (p, q): EACF table (matches R's TSA::eacf) and recursive regression</td><td>Tsay &amp; Tiao (1984); Hannan &amp; Rissanen (1982)</td></tr>
           </tbody>
         </table>
       </div>

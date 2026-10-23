@@ -72,9 +72,14 @@ let e = ensemble_order(&x, &[
   majority/median ensembles (scheduled for removal before 1.0); autocovariance by FFT
   for large lags; the Q_n scale estimator (O(n log n), matches R's `robustbase::Qn`);
   a `sim` feature with the benchmark's ARMA generator (t innovations, outliers,
-  observation noise); `svc_order` — Bauer's (2001) SVC estimator of the McMillan degree
-  via past×future canonical correlations (CCA weighting), with his Table 1 reproduced as
-  a regression test. Clippy-clean, no dependencies, MSRV 1.81.
+  observation noise); McMillan-degree estimators: `svc_order` (Bauer's 2001
+  SVC via past×future canonical correlations, his Table 1 reproduced as a regression
+  test), `hankel_svt_order` (calibrated singular-value thresholding) and
+  `hankel_rank_order` (Robin–Smith's rank test on the autocovariance Hankel, weighted-χ²
+  null by exact Imhof inversion, vanishing level); ARMA (p, q) identification by `eacf`
+  (Tsay–Tiao's table, matching R's `TSA::eacf` digit for digit, with an automated
+  triangle-vertex reading) and `hannan_rissanen` (stages 1–2). Clippy-clean, no
+  dependencies, MSRV 1.81.
 - Theory positioning: AR thresholding is Jirak (2012); canonical correlations with growing
   window is Bauer (2001); Hankel rank tests are Robin & Smith (2000) and Camba-Méndez &
   Kapetanios (2001). `tsorder` implements all of them under one umbrella; the open questions
