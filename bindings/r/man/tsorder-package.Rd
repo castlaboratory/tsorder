@@ -6,6 +6,8 @@
 \alias{tsorder-package}
 \title{tsorder: Order Selection for Time Series Models}
 \description{
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
+
 Order selection for time series models: classical information criteria (AIC, AICc, BIC, HQ, FPE, CAT, MDL over Yule-Walker, Burg or conditional least-squares fits) side by side with the threshold ("clip") estimators of Fine and Hwang (1979) \doi{10.1109/TAC.1979.1102041} built on studentized statistics (PACF, Bartlett-studentized ACF, inverse PACF, the Jirak (2012) \doi{10.1214/11-AOS963} band, a robust PACF), plus McMillan-degree estimators (Bauer's (2001) \doi{10.1016/S0005-1098(01)00118-2} SVC on past-future canonical correlations, Hankel singular-value thresholding, a sequential rank test), ARMA identification (extended sample autocorrelation function, Hannan-Rissanen), and the order of integration by sequential unit-root testing. All statistics run in a dependency-free Rust core.
 }
 \seealso{
@@ -27,7 +29,7 @@ Authors:
   \item Cristiano Ferraz \email{cferraz@castlab.org} (\href{https://orcid.org/0000-0002-6838-6734}{ORCID})
   \item Hugo Vasconcelos \email{hugo.vasconcelos@ufpe.br} (\href{https://orcid.org/0000-0001-6249-0920}{ORCID})
   \item Diogo Bezerra \email{diogo.bezerra@ufpe.br} (\href{https://orcid.org/0000-0002-1216-8674}{ORCID})
-  \item Paulo Renato Alves Firmino (\href{https://orcid.org/0000-0002-3308-2650}{ORCID})
+  \item Paulo Renato Alves Firmino \email{paulo.firmino@ufca.edu.br} (\href{https://orcid.org/0000-0002-3308-2650}{ORCID})
 }
 
 }

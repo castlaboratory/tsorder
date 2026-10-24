@@ -2,6 +2,7 @@
 //! statistical logic. Every `rs_*` function maps a core call to an R list.
 
 use extendr_api::prelude::*;
+use extendr_api::Result;
 use tsorder_core as core;
 
 fn rerr<T>(r: std::result::Result<T, core::Error>) -> Result<T> {

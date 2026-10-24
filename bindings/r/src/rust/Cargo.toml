@@ -18,7 +18,7 @@ name = "document"
 path = "document.rs"
 
 [dependencies]
-extendr-api = "0.8"
+extendr-api = "0.9"
 tsorder-core = { path = "tsorder-core" }
 
 [profile.release]
