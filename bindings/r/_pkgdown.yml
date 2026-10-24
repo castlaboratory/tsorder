@@ -22,8 +22,13 @@ authors:
 
 navbar:
   structure:
-    left:  [intro, reference, news]
+    left:  [intro, articles, reference, news]
     right: [search, lightswitch, github]
+
+articles:
+- title: Learn
+  navbar: ~
+  contents: [articles/estimators, articles/benchmark, comparisons]
 
 reference:
 - title: Select an order
