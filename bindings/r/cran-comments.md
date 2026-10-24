@@ -1,5 +1,9 @@
 This is a new submission (first release of tsorder).
 
+This resubmission fixes the URL flagged by the incoming pre-tests
+(https://extendr.github.io/ in README.md replaced by its permanent
+redirect target https://extendr.rs/).
+
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note

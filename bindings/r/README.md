@@ -1,6 +1,6 @@
 # tsorder (R) <img src="man/figures/logo.svg" align="right" height="139" alt="tsorder hex logo" />
 
-Thin [extendr](https://extendr.github.io/) shell over the dependency-free
+Thin [extendr](https://extendr.rs/) shell over the dependency-free
 Rust core `tsorder-core` (no statistical logic lives here — D-01). See the
 [package site](https://castlaboratory.github.io/tsorder/r/) and the
 [project page](https://castlaboratory.github.io/tsorder/).
