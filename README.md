@@ -69,7 +69,7 @@ let e = ensemble_order(&x, &[
   Jirak-2012 studentization) and the experimental `PacfRobust` (Ma–Genton Q_n
   autocorrelations, 25 % breakdown); thresholds `BicLike`, `Lil`, `MaxOfK`, `Gumbel`,
   `Fixed`; memory `⌈2 log n⌉` (the default, picked by the benchmark) or `⌊n^0.4⌋`;
-  majority/median ensembles (scheduled for removal before 1.0); autocovariance by FFT
+  autocovariance by FFT
   for large lags; the Q_n scale estimator (O(n log n), matches R's `robustbase::Qn`);
   a `sim` feature with the benchmark's ARMA generator (t innovations, outliers,
   observation noise); McMillan-degree estimators: `svc_order` (Bauer's 2001

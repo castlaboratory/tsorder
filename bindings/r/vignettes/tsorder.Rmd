@@ -1,0 +1,88 @@
+---
+title: "Getting started with tsorder"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with tsorder}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+```
+
+tsorder selects the order of a time-series model. It puts three families of
+estimators side by side, all computed by one dependency-free Rust core:
+
+* **information criteria** (AIC, AICc, BIC, HQ, FPE, CAT, MDL) over nested
+  fits by Yule-Walker, Burg or conditional least squares;
+* **threshold ("clip") estimators** in the tradition of Fine and Hwang
+  (1979): grow the memory with the sample, studentise a statistic (PACF,
+  Bartlett-studentised ACF, inverse PACF, the Jirak band, a robust PACF),
+  and keep the last lag that noise cannot explain;
+* **McMillan-degree estimators** (the state dimension): Bauer's SVC on
+  past-future canonical correlations, a calibrated Hankel singular-value
+  cut, and a sequential rank test.
+
+Every default was chosen by a reproducible benchmark shipped in the
+repository, and the test suite pins the implementation to R itself
+(`stats::ar.yw`, `robustbase::Qn`, `TSA::eacf`) and to published tables
+(Bauer 2001, Table 1).
+
+## One call
+
+```{r}
+library(tsorder)
+set.seed(1)
+x <- arima.sim(list(ar = c(1.2, -0.6)), 400)
+
+fit <- order_select(x)   # PACF-clip with the benchmark-chosen defaults
+fit
+```
+
+The whole decision path comes along, ready to plot:
+
+```{r}
+ggplot2::autoplot(fit)
+```
+
+Criteria work the same way:
+
+```{r}
+order_select(x, method = "bic")$order
+ic_order(x, criterion = "bic", method = "burg")$order
+```
+
+## MA and ARMA orders
+
+```{r}
+y <- arima.sim(list(ma = c(0.6, 0.3)), 2000)
+fh_order(y, statistic = "acf_bartlett")$order   # MA order via Bartlett band
+fh_order(y, statistic = "inverse_pacf")$order   # MA order via the inverse PACF
+
+z <- arima.sim(list(ar = 0.5, ma = 0.5), 1000)
+hannan_rissanen(z)[c("p", "q")]                 # ARMA (p, q)
+```
+
+## When there is measurement noise, change the target
+
+Observation noise turns an AR(p) into an ARMA(p, p) but leaves the state
+dimension unchanged, so the McMillan-degree route keeps working while
+AR-order selectors drift:
+
+```{r}
+noisy <- x + rnorm(length(x), sd = 1)
+c(ar_order_bic = ic_order(noisy, "bic")$order,
+  mcmillan = svc_order(noisy)$order)
+```
+
+## How many differences
+
+```{r}
+rw <- cumsum(as.numeric(x))
+integration_order(rw)$d
+```
+
+The level of the sequential test vanishes with the sample size, so `d` is
+estimated consistently; difference `d` times and proceed with the
+stationary tools above.

@@ -258,7 +258,7 @@
         <div class="card"><div class="ic">📏</div><h3>Studentized by construction</h3><p>The raw Fine–Hwang threshold is not scale-invariant and degrades with n. Every statistic here returns its null standard error, and every threshold lives on the studentized scale.</p></div>
         <div class="card"><div class="ic">🔌</div><h3>Pluggable statistics</h3><p>PACF for AR, Bartlett-studentized ACF for MA, long-AR coefficients by Yule–Walker or OLS. The statistic and the cut-off rule are orthogonal axes of the API.</p></div>
         <div class="card"><div class="ic">🎚️</div><h3>Calibrated thresholds</h3><p>BIC-like, iterated-logarithm, max-of-K and Gumbel rules. The Gumbel threshold controls the family-wise over-selection level: α = 5% means ≈ 5% false positives on white noise, verified in the tests.</p></div>
-        <div class="card"><div class="ic">🗳️</div><h3>Ensembles</h3><p>Majority, median, min and max over several configurations — insurance under misspecification, following the model-by-consensus idea of García-Hiernaux et al. (2012).</p></div>
+        <div class="card"><div class="ic">🧪</div><h3>Benchmarked, defaults included</h3><p>Every default was decided by a reproducible benchmark shipped in the repository — including the negative results: the mode-by-consensus ensemble never beat its best member and was dropped.</p></div>
         <div class="card"><div class="ic">🦀</div><h3>No dependencies</h3><p>Pure Rust on the standard library, deterministic, MSRV 1.81. Errors are values (<code>Result</code>), never a panic on user data — ready for thin R and Python bindings.</p></div>
       </div>
       <div class="pill-h">Statistics</div>

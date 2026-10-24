@@ -12,7 +12,7 @@ repository.workspace = true
 # External dependencies are allowed here (unlike the core): rayon for
 # parallelism, serde + toml for the design files.
 [dependencies]
-tsorder-core = { path = "../tsorder-core", features = ["sim"] }
+tsorder-core = { path = "../tsorder-core", features = ["sim", "ensemble"] }
 rayon = "1.10"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"

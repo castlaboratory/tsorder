@@ -21,6 +21,9 @@ path = "src/lib.rs"
 # Simulation utilities (xorshift RNG, ARMA generator with t innovations,
 # outliers, observation noise) for tests and benchmarks.
 sim = []
+# The Fine-Hwang ensemble, kept only so the benchmark figures stay
+# reproducible (the benchmark refuted it; D-26).
+ensemble = []
 
 [dependencies]
 # Deliberately none: the core must build everywhere the R (extendr) and
@@ -29,4 +32,4 @@ sim = []
 [dev-dependencies]
 # Self-dependency so tests and examples see the `sim` feature without
 # forcing it on downstream users.
-tsorder-core = { path = ".", features = ["sim"] }
+tsorder-core = { path = ".", features = ["sim", "ensemble"] }
