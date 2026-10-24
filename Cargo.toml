@@ -13,7 +13,7 @@ authors = [
     "Cristiano Ferraz <cferraz@castlab.org>",
     "Hugo Vasconcelos <hugo.vasconcelos@ufpe.br>",
     "Diogo Bezerra <diogo.bezerra@ufpe.br>",
-    "Paulo Renato Alves Firmino",
+    "Paulo Renato Alves Firmino <paulo.firmino@ufca.edu.br>",
 ]
 repository = "https://github.com/castlaboratory/tsorder"
 homepage = "https://castlaboratory.github.io/tsorder/"

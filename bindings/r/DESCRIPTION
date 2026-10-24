@@ -12,7 +12,7 @@ Authors@R: c(
            comment = c(ORCID = "0000-0001-6249-0920")),
     person("Diogo", "Bezerra", , "diogo.bezerra@ufpe.br", role = "aut",
            comment = c(ORCID = "0000-0002-1216-8674")),
-    person("Paulo Renato", "Alves Firmino", role = "aut",
+    person("Paulo Renato", "Alves Firmino", , "paulo.firmino@ufca.edu.br", role = "aut",
            comment = c(ORCID = "0000-0002-3308-2650"))
   )
 Description: Order selection for time series models: classical information
