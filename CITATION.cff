@@ -5,6 +5,10 @@ type: software
 version: 0.1.0
 date-released: 2026-10-23
 license: MIT
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23607404
+    description: "Concept DOI (all versions, Zenodo)"
 repository-code: "https://github.com/castlaboratory/tsorder"
 url: "https://castlaboratory.github.io/tsorder/"
 authors:

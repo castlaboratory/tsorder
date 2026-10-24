@@ -3,6 +3,8 @@
 [![ci](https://github.com/castlaboratory/tsorder/actions/workflows/ci.yml/badge.svg)](https://github.com/castlaboratory/tsorder/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/tsorder-core.svg)](https://crates.io/crates/tsorder-core)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/tsorder.svg)](https://pypi.org/project/tsorder/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23607404.svg)](https://doi.org/10.5281/zenodo.23607404)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
 
 Order selection for time-series models — classical information criteria and
