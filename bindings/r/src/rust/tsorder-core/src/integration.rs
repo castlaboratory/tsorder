@@ -1,12 +1,12 @@
 //! Order of integration `d` by sequential unit-root testing with a vanishing
-//! level (D-10): difference until the test stops indicating a unit root, with
+//! level: difference until the test stops indicating a unit root, with
 //! `α_n → 0` so the number of differences is estimated consistently.
 //!
 //! Two tests are offered. KPSS (default; null = stationarity): under a true
 //! stationary level the rejection probability tends to `α_n → 0`, under a
 //! unit root the statistic diverges, so `d̂ → d` either way. ADF (null =
 //! unit root): the type-I error vanishes and the power tends to one, same
-//! conclusion from the other side. Fractional `d` is out of scope (D-10).
+//! conclusion from the other side. Fractional `d` is out of scope.
 
 use crate::criteria::{ic_order, Criterion};
 use crate::dist::{df_tau_c_critical, kpss_critical};

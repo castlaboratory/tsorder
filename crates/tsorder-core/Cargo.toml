@@ -22,7 +22,7 @@ path = "src/lib.rs"
 # outliers, observation noise) for tests and benchmarks.
 sim = []
 # The Fine-Hwang ensemble, kept only so the benchmark figures stay
-# reproducible (the benchmark refuted it; D-26).
+# reproducible (the benchmark refuted it).
 ensemble = []
 
 [dependencies]

@@ -1,6 +1,6 @@
 # Q7 — memory rule: poly-log vs n^0.3 vs n^0.4 vs 2*sqrt(n) for the default
 # PACF-clip. The gap between available theory (poly-log, n^0.3) and the
-# empirical default (n^0.4). Decides the Memory enum default (T-2, D-06).
+# empirical default (n^0.4). Decides the Memory enum default.
 
 [run]
 name = "q7"

@@ -1,4 +1,4 @@
-# Q2 — ensemble vs best member vs BIC. Decides D-07.
+# Q2 — ensemble vs best member vs BIC. Decides whether the ensemble stays.
 
 source("benchmark/analysis/common.R")
 

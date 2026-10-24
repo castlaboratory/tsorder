@@ -1,5 +1,5 @@
 # Q7 — memory rule for the PACF-clip: poly-log vs n^0.3 vs n^0.4 vs 2 sqrt(n).
-# Decides the Memory default (T-2, D-06).
+# Decides the Memory default.
 
 source("benchmark/analysis/common.R")
 

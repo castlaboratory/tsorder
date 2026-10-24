@@ -1,4 +1,4 @@
-//! Thin PyO3 shell over `tsorder-core` (D-01): type conversion only, no
+//! Thin PyO3 shell over `tsorder-core`: type conversion only, no
 //! statistical logic. Functions accept any sequence of floats (lists, numpy
 //! arrays, pandas Series) and return plain dicts. Contiguous float64 numpy
 //! arrays take a zero-copy fast path; everything else goes through an

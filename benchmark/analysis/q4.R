@@ -1,5 +1,5 @@
 # Q4 — McMillan degree: accuracy by n and DGP, level on white noise,
-# and the MbC verdict (D-26).
+# and the mode-by-consensus (MbC) verdict.
 
 source("benchmark/analysis/common.R")
 

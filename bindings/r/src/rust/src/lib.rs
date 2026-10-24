@@ -1,4 +1,4 @@
-//! Thin extendr shell over `tsorder-core` (D-01): type conversion only, no
+//! Thin extendr shell over `tsorder-core`: type conversion only, no
 //! statistical logic. Every `rs_*` function maps a core call to an R list.
 
 use extendr_api::prelude::*;

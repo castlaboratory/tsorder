@@ -100,7 +100,7 @@ impl SquareMatrix {
 /// by one-sided Jacobi: pairwise orthogonalisation of the columns until every
 /// pair is numerically orthogonal; the singular values are then the column
 /// norms. `O(sweeps · cols² · rows)` with a handful of sweeps — fine for the
-/// `K × K` matrices of the canonical-correlation step (`K ≤ ~50`, D-03).
+/// `K × K` matrices of the canonical-correlation step (`K ≤ ~50`).
 pub fn singular_values(a: &[f64], rows: usize, cols: usize) -> Vec<f64> {
     debug_assert_eq!(a.len(), rows * cols);
     // Column-major working copy.

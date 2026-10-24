@@ -1,5 +1,5 @@
 # Q2 — ensemble (majority/median over {pacf, long_ar_ols, acf_bartlett})
-# vs its best member vs BIC. Decides D-07.
+# vs its best member vs BIC. Decides whether the ensemble stays.
 
 [run]
 name = "q2"

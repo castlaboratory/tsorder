@@ -1,5 +1,5 @@
 # Q3 — contamination: PacfRobust vs classical Pacf vs BIC under additive
-# outliers and heavy-tailed innovations (T-6).
+# outliers and heavy-tailed innovations.
 
 [run]
 name = "q3"

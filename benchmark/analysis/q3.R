@@ -1,4 +1,4 @@
-# Q3 — contamination: robust PACF vs classical selectors (T-6).
+# Q3 — contamination: robust PACF vs classical selectors.
 
 source("benchmark/analysis/common.R")
 

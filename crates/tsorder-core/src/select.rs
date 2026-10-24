@@ -150,7 +150,7 @@ impl Statistic {
                 Ok((l.phi_last, root_n_se))
             }
             Statistic::LongArOls => {
-                // Demean first (D-15): the regression has no intercept, so without this
+                // Demean first: the regression has no intercept, so without this
                 // step a level shift (x + 50) leaks into every lag coefficient. The
                 // autocovariance-based statistics demean inside `autocovariance`.
                 let mean = x.iter().sum::<f64>() / n as f64;
@@ -413,7 +413,7 @@ pub struct EnsembleResult {
 #[cfg(feature = "ensemble")]
 /// Run several Fine–Hwang configurations and combine them.
 ///
-/// ⚠️ Removed from the default public API (D-26): neither this ensemble nor a
+/// ⚠️ Removed from the default public API: neither this ensemble nor a
 /// genuine mode-by-consensus beat their best member anywhere in the benchmark
 /// (the mode can fall *below its worst voter* under a parsimonious
 /// tie-break). Kept behind the `ensemble` feature so the benchmark figures

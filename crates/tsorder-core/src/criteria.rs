@@ -16,7 +16,7 @@ pub enum Criterion {
     Aic,
     /// Hurvich & Tsai (1989) small-sample correction: `AIC + 2K(K+1)/(n-K-1)` with
     /// `K = k + 1` free parameters (the `k` AR coefficients **plus the innovation variance**),
-    /// the convention of `forecast::Arima` without constant (D-14). The series is demeaned
+    /// the convention of `forecast::Arima` without constant. The series is demeaned
     /// before fitting but the mean is not counted (same as R's `ar()`).
     Aicc,
     /// Schwarz (1978): `n log σ̂² + k log n`. Strongly consistent (Hannan 1980).
@@ -65,7 +65,7 @@ impl Criterion {
     /// Number of free parameters counted by the penalty for an AR(`k`) fit: the `k`
     /// coefficients plus the innovation variance. For AIC/BIC/HQ the variance term is a
     /// constant shift that does not affect the argmin, so they use `k` directly as in the
-    /// textbook formulas; AICc's correction is nonlinear in `K`, so there it matters (D-14).
+    /// textbook formulas; AICc's correction is nonlinear in `K`, so there it matters.
     pub fn n_params(k: usize) -> usize {
         k + 1
     }

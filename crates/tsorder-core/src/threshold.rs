@@ -38,16 +38,16 @@ pub enum Threshold {
     /// `b_p + a_p · (−log(−log(1−alpha)))` with `a_p = 1/sqrt(2 log p)` and
     /// `b_p = sqrt(2 log p) − (log log p + log π) / (2 sqrt(2 log p))` (absolute values ⇒ `2p` tails).
     /// With a fixed `alpha` this controls the family-wise overestimation probability at ≈ `alpha`
-    /// (not consistent); with `alpha = alpha_n → 0` slowly it is the Jirak-type consistent rule
-    /// (D-20). Jirak (2012) gives the exact normalising constants for Yule–Walker estimates;
-    /// this generic form is a placeholder until `Statistic::JirakBand` lands (PLAN M1).
+    /// (not consistent); with `alpha = alpha_n → 0` slowly it is the Jirak-type consistent rule.
+    /// Jirak (2012) gives the exact normalising constants for Yule–Walker estimates
+    /// (see `Statistic::JirakBand`); this generic form uses the universal Gumbel constants.
     /// Requires `0 < alpha < 1`.
     Gumbel { alpha: f64 },
 }
 
 impl Default for Threshold {
     /// `BicLike { c: 1.5 }` — matched BIC in the 2026-10-23 simulations. Chosen empirically;
-    /// not derived from a theorem (D-06).
+    /// not derived from a theorem.
     fn default() -> Self {
         Threshold::BicLike { c: 1.5 }
     }
@@ -110,9 +110,9 @@ pub fn polylog_memory(n: usize, c: f64) -> usize {
     p.clamp(2, (n / 4).max(2))
 }
 
-/// How the growing memory `p_n` is chosen (the D-20/M1 enum, settled once
-/// the benchmark fixed the default). [`Memory::resolve`] turns it into a
-/// concrete window for a sample size.
+/// How the growing memory `p_n` is chosen; the default was fixed by
+/// benchmark. [`Memory::resolve`] turns it into a concrete window for a
+/// sample size.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Memory {
     /// The statistic's own default: `⌈2 log n⌉` for most statistics, the

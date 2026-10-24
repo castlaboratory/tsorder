@@ -1,7 +1,7 @@
 # Q4 — McMillan degree: level under H0 and accuracy for the three routes
 # (SVC with both penalties and both windows, the CK comparators cc-AIC/cc-BIC
 # and Bartlett sequential, the Robin-Smith rank test, the SVT cut) plus the
-# genuine mode-by-consensus (MbC). Feeds T-5 and settles D-26.
+# genuine mode-by-consensus (MbC). Settles whether MbC stays in the API.
 
 [run]
 name = "q4"
