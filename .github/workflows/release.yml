@@ -1,9 +1,10 @@
 name: release
 
-# Builds the distributable artifacts when a version tag is pushed:
-# Python wheels + sdist (maturin) for Linux/macOS/Windows. Publishing to
-# PyPI/crates.io/CRAN stays a manual, maintainer-run step; the artifacts
-# land on the workflow run for inspection and upload.
+# Builds the Python wheels + sdist (maturin) for Linux/macOS/Windows when a
+# version tag is pushed, and publishes them to PyPI via Trusted Publishing
+# (OIDC): PyPI must list this repository and workflow as a trusted publisher
+# for the 'tsorder' project (environment 'pypi'); no token is stored.
+# crates.io and CRAN stay manual, maintainer-run steps.
 
 on:
   push:
@@ -43,3 +44,21 @@ jobs:
         with:
           name: sdist
           path: bindings/python/dist
+
+  publish:
+    name: publish to PyPI (trusted publishing)
+    needs: [wheels, sdist]
+    # Only on version tags, never on manual dispatch.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
