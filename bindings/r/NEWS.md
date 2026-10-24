@@ -12,6 +12,10 @@
   path.
 * New vignette comparing tsorder with `stats::ar()` and
   `forecast::auto.arima()`.
+* `fit_arima()` stores the series on the returned fit (`$x`, `$series`),
+  so `forecast::forecast()` recovers the data instead of re-evaluating the
+  internal call (which returned NAs or errored depending on the caller's
+  variable names).
 
 * First release: information criteria (AIC, AICc, BIC, HQ, FPE, CAT, MDL
   over Yule-Walker, Burg or conditional-OLS fits), Fine-Hwang threshold

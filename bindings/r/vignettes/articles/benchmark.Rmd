@@ -61,11 +61,12 @@ from `n = 400` and pay no visible price elsewhere. This single figure fixed
 the package default (`polylog_memory(n, 2)`).
 
 ```{r memory-rules}
-q7 <- accuracy(read_orders("q7"))
-q7 <- q7[q7$dgp %in% c("ar12_seasonal", "ar4_subset", "ar1_09"), ]
 mem_labels <- c(pacf_mem_log2 = "2 log n (default)", pacf_mem_log4 = "4 log n",
                 pacf_mem_n03 = "n^0.3", pacf_mem_n04 = "n^0.4 (Fine-Hwang)",
                 pacf_mem_sqrt2 = "2 sqrt(n)")
+q7 <- accuracy(read_orders("q7"))
+q7 <- q7[q7$dgp %in% c("ar12_seasonal", "ar4_subset", "ar1_09") &
+           q7$estimator %in% names(mem_labels), ]
 q7$memory <- mem_labels[q7$estimator]
 mem_cols <- c("2 log n (default)" = oi[["blue"]], "4 log n" = oi[["skyblue"]],
               "n^0.3" = oi[["orange"]], "n^0.4 (Fine-Hwang)" = oi[["vermillion"]],
@@ -88,10 +89,11 @@ data the robust statistic pays a modest price, which is why it is an
 explicit option rather than the default.
 
 ```{r robustness}
-q3 <- accuracy(read_orders("q3"))
-q3 <- q3[q3$dgp %in% c("ar2_clean", "ar2_outliers", "ar2_t3"), ]
 est_labels <- c(pacf_bic15 = "PACF clip (default)", bic_yw = "BIC",
                 jirak_gumbel05 = "Jirak band", pacf_robust = "robust PACF")
+q3 <- accuracy(read_orders("q3"))
+q3 <- q3[q3$dgp %in% c("ar2_clean", "ar2_outliers", "ar2_t3") &
+           q3$estimator %in% names(est_labels), ]
 q3$est <- est_labels[q3$estimator]
 est_cols <- c("PACF clip (default)" = oi[["blue"]], "BIC" = oi[["gray"]],
               "Jirak band" = oi[["reddishpurple"]], "robust PACF" = oi[["orange"]])

@@ -20,11 +20,14 @@ test_that("fit_arima closes the selection-to-fit loop", {
 
 test_that("the fitted object works with forecast and ts inputs pass through", {
   skip_if_not_installed("forecast")
-  x <- ts(as.numeric(arima.sim(list(ar = c(1.2, -0.6)), 400)), frequency = 12)
-  fit <- fit_arima(x)
+  # Deliberately NOT named `x`: forecast::getResponse() must read the stored
+  # series, not re-evaluate fit_arima()'s internal call in this frame.
+  serie <- ts(as.numeric(arima.sim(list(ar = c(1.2, -0.6)), 400)), frequency = 12)
+  fit <- fit_arima(serie)
   fc <- forecast::forecast(fit, h = 6)
   expect_length(fc$mean, 6)
   expect_identical(stats::frequency(fc$mean), 12)
+  expect_true(all(is.finite(fc$mean)))
 })
 
 test_that("tidy and glance follow broom conventions", {

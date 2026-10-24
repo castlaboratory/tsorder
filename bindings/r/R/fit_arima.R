@@ -44,6 +44,12 @@ fit_arima <- function(x, method = "pacf", d = NULL, include.mean = TRUE, ...) {
     ord <- if (method %in% ma_methods) c(0L, d, sel$order) else c(sel$order, d, 0L)
   }
   fit <- stats::arima(x, order = ord, include.mean = include.mean)
+  # stats::arima() does not keep the series, and forecast::getResponse()
+  # cannot re-evaluate our internal call (it would silently return NAs or
+  # error depending on the caller's variable names). Store the series the
+  # way the forecast ecosystem expects.
+  fit$x <- stats::as.ts(x)
+  fit$series <- deparse1(substitute(x))
   attr(fit, "tsorder") <- sel
   attr(fit, "tsorder_d") <- d
   fit
