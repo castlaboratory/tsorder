@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 181 209" width="181" height="209" role="img" aria-label="tsorder hex logo: studentized PACF bars with a threshold line, the last surviving lag marks the order">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16203f"/>
+      <stop offset="1" stop-color="#0b1020"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9b82ff"/>
+      <stop offset="1" stop-color="#7c5cff"/>
+    </linearGradient>
+    <clipPath id="hexclip">
+      <polygon points="90.5,2 179,54.25 179,154.75 90.5,207 2,154.75 2,54.25"/>
+    </clipPath>
+  </defs>
+
+  <!-- hex background and border -->
+  <g clip-path="url(#hexclip)">
+    <rect width="181" height="209" fill="url(#bg)"/>
+    <!-- faint grid -->
+    <g stroke="#263457" stroke-width="1" opacity="0.55">
+      <line x1="0" y1="73" x2="181" y2="73"/>
+      <line x1="0" y1="99" x2="181" y2="99"/>
+    </g>
+  </g>
+  <polygon points="90.5,4.6 176.75,55.55 176.75,153.45 90.5,204.4 4.25,153.45 4.25,55.55"
+           fill="none" stroke="#7c5cff" stroke-width="5.2" stroke-linejoin="round"/>
+
+  <!-- studentized PACF path: AR(2) signature, lags 1..8 -->
+  <g clip-path="url(#hexclip)">
+    <!-- threshold tau_n -->
+    <line x1="26" y1="101" x2="155" y2="101" stroke="#ffb14e"
+          stroke-width="2.4" stroke-dasharray="6 4" stroke-linecap="round"/>
+    <!-- kept lags (above tau) -->
+    <rect x="38"  y="55"  width="9" height="70" rx="2.5" fill="url(#bar)"/>
+    <rect x="52"  y="69"  width="9" height="56" rx="2.5" fill="url(#bar)"/>
+    <!-- clipped lags (below tau) -->
+    <g fill="#34456f">
+      <rect x="66"  y="114" width="9" height="11" rx="2.5"/>
+      <rect x="80"  y="109" width="9" height="16" rx="2.5"/>
+      <rect x="94"  y="116" width="9" height="9"  rx="2.5"/>
+      <rect x="108" y="111" width="9" height="14" rx="2.5"/>
+      <rect x="122" y="117" width="9" height="8"  rx="2.5"/>
+      <rect x="136" y="113" width="9" height="12" rx="2.5"/>
+    </g>
+    <!-- baseline -->
+    <line x1="26" y1="126.5" x2="155" y2="126.5" stroke="#34456f" stroke-width="2"/>
+    <!-- the selected order: a marker under the last surviving lag -->
+    <circle cx="56.5" cy="135" r="3" fill="#ffb14e"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="90.5" y="160" text-anchor="middle"
+        font-family="'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace"
+        font-size="25" font-weight="700" letter-spacing="0.5"
+        fill="#e8edf7">tsorder</text>
+</svg>
