@@ -10,6 +10,7 @@ on:
     paths:
       - "site/**"
       - "crates/**"
+      - "bindings/r/**"
       - "Cargo.toml"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
