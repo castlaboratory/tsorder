@@ -27,11 +27,12 @@ navbar:
 
 reference:
 - title: Select an order
-  contents: [order_select, autoplot.tsorder_fit, tidy.tsorder_fit, glance.tsorder_fit]
+  contents: [order_select, autoplot.tsorder_fit, tidy.tsorder_fit,
+             glance.tsorder_fit, as_tibble.tsorder_fit]
 - title: Select and fit
-  contents: [fit_arima]
+  contents: [fit_arima, TSORDER]
 - title: Information criteria and threshold estimators
-  contents: [ic_order, fh_order]
+  contents: [ic_order, fh_order, jirak_order]
 - title: McMillan degree (state dimension)
   contents: [svc_order, hankel_rank_order, hankel_svt_order]
 - title: ARMA (p, q) and integration
