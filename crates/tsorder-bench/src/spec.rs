@@ -31,7 +31,7 @@ pub struct Run {
     pub timing_series: Option<usize>,
 }
 
-/// One estimator. `kind` ∈ {"ic", "fh", "ensemble", "svc", "svt", "rank",
+/// One estimator. `kind` ∈ {"ic", "fh", "jirak5", "ensemble", "svc", "svt", "rank",
 /// "cc_ic", "ba_seq", "mbc", "eacf", "hr"}; the other fields apply depending
 /// on the kind. The ARMA identifiers ("eacf", "hr") return the encoded order
 /// `10·p + q` (p, q ≤ 9); `eacf` with no clean vertex returns the failure
@@ -96,6 +96,7 @@ fn statistic(name: &str) -> Statistic {
         "inverse_pacf" => Statistic::InversePacf,
         "jirak_band" => Statistic::JirakBand,
         "pacf_robust" => Statistic::PacfRobust,
+        "acf_robust" => Statistic::AcfRobust,
         other => panic!("unknown statistic {other}"),
     }
 }
@@ -143,8 +144,11 @@ impl Est {
         }
     }
 
-    fn memory(&self, n: usize, stat: Statistic) -> Option<usize> {
-        let m = match self.memory.as_deref()? {
+    fn memory(&self, n: usize, stat: Statistic) -> tsorder_core::Memory {
+        let Some(spec) = self.memory.as_deref() else {
+            return tsorder_core::Memory::Default;
+        };
+        let m = match spec {
             "n03" => ((n as f64).powf(0.3).floor() as usize).max(2),
             "n04" => tsorder_core::power_memory(n),
             "sqrt2" => ((2.0 * (n as f64).sqrt()).floor() as usize).min(n / 4),
@@ -153,7 +157,7 @@ impl Est {
             "default" => stat.default_memory(n),
             s => s.parse().unwrap_or_else(|_| panic!("bad memory {s}")),
         };
-        Some(m)
+        tsorder_core::Memory::Fixed(m)
     }
 
     fn fh_config(&self, n: usize, stat: Statistic) -> FhConfig {
@@ -317,6 +321,21 @@ impl Est {
             "fh" => {
                 let stat = statistic(self.statistic.as_deref().expect("fh needs statistic"));
                 Ok(fh_order(x, self.fh_config(n, stat))?.order)
+            }
+            "jirak5" => {
+                let alpha = match &self.alpha {
+                    Some(toml::Value::Float(a)) => *a,
+                    None => 0.05,
+                    other => panic!("bad jirak5 alpha {other:?}"),
+                };
+                Ok(tsorder_core::jirak_order(
+                    x,
+                    tsorder_core::JirakConfig {
+                        alpha,
+                        memory: self.memory(n, Statistic::JirakBand),
+                    },
+                )?
+                .order)
             }
             "ensemble" => {
                 let cfgs: Vec<FhConfig> = self

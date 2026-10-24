@@ -269,7 +269,7 @@ fn gumbel_level_is_controlled_on_white_noise() {
                 FhConfig {
                     statistic: stat,
                     threshold: Threshold::Gumbel { alpha: 0.05 },
-                    memory: Some(polylog_memory(1000, 2.0)),
+                    memory: tsorder_core::Memory::PolyLog { c: 2.0 },
                 },
             )
             .unwrap();
@@ -362,4 +362,107 @@ fn jirak_band_recovers_ar2_and_sparse_support() {
     assert_eq!(rs.order, 4);
     let support: Vec<bool> = rs.studentized.iter().map(|t| t.abs() > rs.tau).collect();
     assert_eq!(&support[..4], &[true, false, false, true]);
+}
+
+#[test]
+fn jirak_refit_recovers_ar2_and_dominates_single_fit_on_sparse_ar() {
+    let x = sim_arma(&[1.2, -0.6], &[], 4000, 42);
+    let r = jirak_order(&x, JirakConfig::default()).unwrap();
+    assert_eq!(r.order, 2, "q5 gave {}", r.order);
+    assert_eq!(r.per_dimension.len(), r.p_n);
+
+    // Sparse AR(4): q̂⁽⁵⁾ is the max over refits, so it can never select
+    // below the full-dimension band estimate with the same threshold.
+    let x = sim_arma(&[0.5, 0.0, 0.0, 0.3], &[], 4000, 7);
+    let r5 = jirak_order(&x, JirakConfig::default()).unwrap();
+    let band = fh_order(
+        &x,
+        FhConfig {
+            statistic: Statistic::JirakBand,
+            threshold: Threshold::Gumbel { alpha: 0.05 },
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(r5.order, 4, "q5 gave {}", r5.order);
+    assert!(r5.order >= band.order);
+    // The full-dimension estimate is one of the refits.
+    assert_eq!(r5.per_dimension[r5.p_n - 1], band.order);
+}
+
+#[test]
+fn jirak_refit_is_scale_and_sign_invariant_and_level_holds_on_white_noise() {
+    let x = sim_arma(&[1.2, -0.6], &[], 3000, 11);
+    let scaled: Vec<f64> = x.iter().map(|v| -37.5 * v + 4.0).collect();
+    let a = jirak_order(&x, JirakConfig::default()).unwrap();
+    let b = jirak_order(&scaled, JirakConfig::default()).unwrap();
+    assert_eq!(a.order, b.order);
+    assert_eq!(a.per_dimension, b.per_dimension);
+
+    // Family-wise overestimation on white noise ≈ alpha per refit chain;
+    // the max over refits inflates it, but it must stay modest.
+    let mut hits = 0;
+    for seed in 0..100 {
+        let w = sim_arma(&[], &[], 1200, 1000 + seed);
+        if jirak_order(&w, JirakConfig::default()).unwrap().order > 0 {
+            hits += 1;
+        }
+    }
+    assert!(hits <= 25, "white-noise false positives: {hits}/100");
+}
+
+#[test]
+fn robust_acf_survives_additive_outliers_where_bartlett_acf_dies() {
+    // MA(2) with 5 % additive outliers of magnitude ~6 sd.
+    let cfg = sim::ArmaSim {
+        theta: &[0.9, 0.5],
+        additive_outliers: Some(sim::Contamination {
+            prob: 0.05,
+            magnitude: 10.0,
+        }),
+        ..Default::default()
+    };
+    let mut robust_ok = 0;
+    let mut classic_ok = 0;
+    for seed in 0..20 {
+        let x = cfg.simulate(3000, 300 + seed).unwrap();
+        let rob = fh_order(
+            &x,
+            FhConfig {
+                statistic: Statistic::AcfRobust,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let cla = fh_order(
+            &x,
+            FhConfig {
+                statistic: Statistic::AcfBartlett,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        robust_ok += usize::from(rob.order == 2);
+        classic_ok += usize::from(cla.order == 2);
+    }
+    assert!(
+        robust_ok >= 15,
+        "AcfRobust recovered only {robust_ok}/20 under contamination"
+    );
+    assert!(
+        robust_ok > classic_ok,
+        "AcfRobust ({robust_ok}) should beat AcfBartlett ({classic_ok}) under contamination"
+    );
+
+    // And on clean data it still works.
+    let clean = sim_arma(&[], &[0.9, 0.5], 3000, 99);
+    let r = fh_order(
+        &clean,
+        FhConfig {
+            statistic: Statistic::AcfRobust,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(r.order, 2);
 }

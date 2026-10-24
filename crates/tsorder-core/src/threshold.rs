@@ -110,6 +110,41 @@ pub fn polylog_memory(n: usize, c: f64) -> usize {
     p.clamp(2, (n / 4).max(2))
 }
 
+/// How the growing memory `p_n` is chosen (the D-20/M1 enum, settled once
+/// the benchmark fixed the default). [`Memory::resolve`] turns it into a
+/// concrete window for a sample size.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum Memory {
+    /// The statistic's own default: `⌈2 log n⌉` for most statistics, the
+    /// shorter `⌈log n⌉` for the robust PACF (see
+    /// `Statistic::default_memory`).
+    #[default]
+    Default,
+    /// `⌊n^alpha⌋` — the Fine–Hwang-style power rule ([`power_memory`] is
+    /// the `alpha = 0.4` special case).
+    PowerLaw { alpha: f64 },
+    /// `⌈c log n⌉` ([`polylog_memory`]), the window covered by the uniform
+    /// LIL bounds.
+    PolyLog { c: f64 },
+    /// A fixed window.
+    Fixed(usize),
+}
+
+impl Memory {
+    /// The concrete window, clamped to `[2, n/4]` except for [`Memory::Fixed`].
+    pub fn resolve(&self, n: usize, statistic_default: usize) -> usize {
+        match self {
+            Memory::Default => statistic_default,
+            Memory::PowerLaw { alpha } => {
+                let p = (n as f64).powf(*alpha).floor() as usize;
+                p.clamp(2, (n / 4).max(2))
+            }
+            Memory::PolyLog { c } => polylog_memory(n, *c),
+            Memory::Fixed(k) => *k,
+        }
+    }
+}
+
 /// Power-law growing memory `p_n = floor(n^0.4)`, clamped to `[2, n/4]` —
 /// the Fine–Hwang-style window. Satisfies `p_n²/n → 0` (Hwang) but not
 /// `p_n³/n → 0` (Berk 1974 / Lewis–Reinsel 1985 uniform results). It was the
@@ -149,6 +184,21 @@ mod tests {
         assert!(t10 > 2.3 && t10 < 3.3, "{t10}");
         assert!(Threshold::Gumbel { alpha: 0.05 }.value(1000, 100) > t10);
         assert!(Threshold::Gumbel { alpha: 0.001 }.value(1000, 10) > t10);
+    }
+
+    #[test]
+    fn memory_rules_resolve() {
+        assert_eq!(Memory::Default.resolve(1000, 14), 14);
+        assert_eq!(
+            Memory::PowerLaw { alpha: 0.4 }.resolve(1000, 14),
+            power_memory(1000)
+        );
+        assert_eq!(
+            Memory::PolyLog { c: 2.0 }.resolve(1000, 14),
+            polylog_memory(1000, 2.0)
+        );
+        assert_eq!(Memory::Fixed(7).resolve(1000, 14), 7);
+        assert_eq!(Memory::default(), Memory::Default);
     }
 
     #[test]
