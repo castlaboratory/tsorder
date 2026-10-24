@@ -10,8 +10,7 @@
 //! * **Fine–Hwang threshold estimators** ([`fh_order`]): fit a model whose memory
 //!   `p_n` grows with `n`, "clip" every statistic below a vanishing threshold
 //!   `η_n`, and report the index of the last surviving lag. Several pluggable
-//!   statistics are supported ([`Statistic`]) as well as an ensemble rule
-//!   ([`ensemble_order`]).
+//!   statistics are supported ([`Statistic`]).
 //!
 //! The mathematical background, the equivalences between the two families and
 //! the empirical findings that motivated the design are summarised on the
@@ -52,9 +51,9 @@ pub use hankel::{
 pub use integration::{integration_order, IntegrationConfig, IntegrationResult, UnitRootTest};
 pub use levinson::{burg_from_series, levinson, levinson_from_series, Levinson};
 pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_psd};
-pub use select::{
-    ensemble_order, fh_order, EnsembleResult, EnsembleRule, FhConfig, FhResult, Statistic,
-};
+#[cfg(feature = "ensemble")]
+pub use select::{ensemble_order, EnsembleResult, EnsembleRule};
+pub use select::{fh_order, FhConfig, FhResult, Statistic};
 pub use threshold::{polylog_memory, power_memory, Threshold};
 
 /// Library error type.

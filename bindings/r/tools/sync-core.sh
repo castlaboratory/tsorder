@@ -24,6 +24,7 @@ publish = false
 
 [features]
 sim = []
+ensemble = []
 
 [dependencies]
 TOML

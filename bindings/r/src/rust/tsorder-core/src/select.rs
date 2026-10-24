@@ -267,6 +267,7 @@ pub fn fh_order(x: &[f64], config: FhConfig) -> Result<FhResult> {
     })
 }
 
+#[cfg(feature = "ensemble")]
 /// How to combine several estimators.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnsembleRule {
@@ -280,6 +281,7 @@ pub enum EnsembleRule {
     Max,
 }
 
+#[cfg(feature = "ensemble")]
 #[derive(Debug, Clone)]
 pub struct EnsembleResult {
     pub rule: EnsembleRule,
@@ -287,12 +289,14 @@ pub struct EnsembleResult {
     pub members: Vec<FhResult>,
 }
 
+#[cfg(feature = "ensemble")]
 /// Run several Fine–Hwang configurations and combine them.
 ///
-/// ⚠️ **Scheduled for removal before 1.0**: in the AR/MA benchmark round the
-/// ensemble never beat its best member (max gain +0.01, negative on MA); the
-/// final verdict waits for the ARMA round, where a genuine mode-over-families
-/// rule (García-Hiernaux et al. 2012) can be tested.
+/// ⚠️ Removed from the default public API (D-26): neither this ensemble nor a
+/// genuine mode-by-consensus beat their best member anywhere in the benchmark
+/// (the mode can fall *below its worst voter* under a parsimonious
+/// tie-break). Kept behind the `ensemble` feature so the benchmark figures
+/// remain reproducible.
 ///
 /// Design note: the ensemble is *not* expected to beat the best single
 /// statistic in the well-specified case; its purpose is insurance under misspecification
