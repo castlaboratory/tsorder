@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-label="Architecture: a dependency-free Rust core, tsorder-core, is wrapped by the R package via extendr, the Python package via PyO3, and published as a Rust crate; one golden file pins all three to identical results.">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a93b8"/>
+    </marker>
+  </defs>
+  <style>
+    .core { fill: #7c5cff; stroke: none; }
+    .coretitle { font: 700 16px 'Source Sans 3','Segoe UI',sans-serif; fill: #ffffff; }
+    .coresub { font: 400 13px 'Source Sans 3','Segoe UI',sans-serif; fill: #e6dfff; }
+    .chip { fill: #6947ea; }
+    .chiptext { font: 500 12px 'JetBrains Mono','SF Mono',monospace; fill: #f0ebff; }
+    .box { fill: #f3f0ff; stroke: #cdc3f2; stroke-width: 1.5; }
+    .title { font: 700 15px 'Source Sans 3','Segoe UI',sans-serif; fill: #241a4d; }
+    .body { font: 400 13px 'Source Sans 3','Segoe UI',sans-serif; fill: #43395f; }
+    .mono { font: 500 12.5px 'JetBrains Mono','SF Mono',monospace; fill: #5a3df0; }
+    .flow { stroke: #9a93b8; stroke-width: 1.8; fill: none; }
+    .goldbox { fill: #fff7e0; stroke: #e8d089; stroke-width: 1.5; }
+    .goldtext { font: 400 13px 'Source Sans 3','Segoe UI',sans-serif; fill: #5c4a12; }
+    .goldtitle { font: 700 13px 'Source Sans 3','Segoe UI',sans-serif; fill: #5c4a12; }
+  </style>
+
+  <!-- core -->
+  <rect class="core" x="110" y="10" width="540" height="96" rx="12"/>
+  <text class="coretitle" x="380" y="36" text-anchor="middle">tsorder-core &#8212; Rust, zero dependencies</text>
+  <text class="coresub" x="380" y="56" text-anchor="middle">all statistics live here, and only here</text>
+  <rect class="chip" x="128" y="68" width="118" height="24" rx="12"/>
+  <text class="chiptext" x="187" y="84" text-anchor="middle">criteria &#183; FPE &#8230;</text>
+  <rect class="chip" x="254" y="68" width="128" height="24" rx="12"/>
+  <text class="chiptext" x="318" y="84" text-anchor="middle">clip thresholds</text>
+  <rect class="chip" x="390" y="68" width="118" height="24" rx="12"/>
+  <text class="chiptext" x="449" y="84" text-anchor="middle">McMillan degree</text>
+  <rect class="chip" x="516" y="68" width="116" height="24" rx="12"/>
+  <text class="chiptext" x="574" y="84" text-anchor="middle">EACF &#183; HR &#183; d&#770;</text>
+
+  <!-- arrows -->
+  <line class="flow" x1="200" y1="106" x2="136" y2="142" marker-end="url(#arr2)"/>
+  <line class="flow" x1="380" y1="106" x2="380" y2="142" marker-end="url(#arr2)"/>
+  <line class="flow" x1="560" y1="106" x2="624" y2="142" marker-end="url(#arr2)"/>
+
+  <!-- R -->
+  <rect class="box" x="8" y="146" width="232" height="104" rx="10"/>
+  <text class="title" x="124" y="172" text-anchor="middle">R package</text>
+  <text class="body" x="124" y="194" text-anchor="middle">extendr shell, core vendored</text>
+  <text class="body" x="124" y="212" text-anchor="middle">type conversion only</text>
+  <text class="mono" x="124" y="234" text-anchor="middle">library(tsorder)</text>
+
+  <!-- Python -->
+  <rect class="box" x="264" y="146" width="232" height="104" rx="10"/>
+  <text class="title" x="380" y="172" text-anchor="middle">Python package</text>
+  <text class="body" x="380" y="194" text-anchor="middle">PyO3 / maturin, on PyPI</text>
+  <text class="body" x="380" y="212" text-anchor="middle">zero-copy numpy fast path</text>
+  <text class="mono" x="380" y="234" text-anchor="middle">import tsorder</text>
+
+  <!-- Rust -->
+  <rect class="box" x="520" y="146" width="232" height="104" rx="10"/>
+  <text class="title" x="636" y="172" text-anchor="middle">Rust crate</text>
+  <text class="body" x="636" y="194" text-anchor="middle">on crates.io, MSRV 1.81</text>
+  <text class="body" x="636" y="212" text-anchor="middle">rustdoc published under /api</text>
+  <text class="mono" x="636" y="234" text-anchor="middle">tsorder_core::*</text>
+
+  <!-- golden -->
+  <rect class="goldbox" x="8" y="274" width="744" height="46" rx="10"/>
+  <text class="goldtitle" x="380" y="294" text-anchor="middle">golden.json &#8212; one set of reference outputs</text>
+  <text class="goldtext" x="380" y="312" text-anchor="middle">the R and Python test suites replay it bit for bit, so every binding returns exactly the core's numbers</text>
+</svg>

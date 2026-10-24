@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 446" role="img" aria-label="How a clip estimator selects the order: grow the memory, studentize a statistic, apply a studentized threshold, keep the last surviving lag.">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a93b8"/>
+    </marker>
+  </defs>
+  <style>
+    .box { fill: #f3f0ff; stroke: #cdc3f2; stroke-width: 1.5; }
+    .step { fill: #7c5cff; }
+    .stepnum { font: 700 14px 'Source Sans 3','Segoe UI',sans-serif; fill: #ffffff; }
+    .title { font: 700 15px 'Source Sans 3','Segoe UI',sans-serif; fill: #241a4d; }
+    .body  { font: 400 13.5px 'Source Sans 3','Segoe UI',sans-serif; fill: #43395f; }
+    .mono  { font: 500 13px 'JetBrains Mono','SF Mono',monospace; fill: #5a3df0; }
+    .flow  { stroke: #9a93b8; stroke-width: 1.8; fill: none; }
+  </style>
+
+  <!-- step 1 -->
+  <rect class="box" x="8" y="8" width="744" height="88" rx="10"/>
+  <circle class="step" cx="36" cy="52" r="14"/>
+  <text class="stepnum" x="36" y="57" text-anchor="middle">1</text>
+  <text class="title" x="62" y="38">Grow the memory with the sample</text>
+  <text class="body" x="62" y="60">Fit one long AR(<tspan class="mono">p_n</tspan>) — default <tspan class="mono">p_n = &#8968;2 log n&#8969;</tspan> — with a single Levinson recursion.</text>
+  <text class="body" x="62" y="78">No maximum order to guess, no likelihood to optimize.</text>
+
+  <line class="flow" x1="380" y1="96" x2="380" y2="118" marker-end="url(#arr)"/>
+
+  <!-- step 2 -->
+  <rect class="box" x="8" y="122" width="744" height="88" rx="10"/>
+  <circle class="step" cx="36" cy="166" r="14"/>
+  <text class="stepnum" x="36" y="171" text-anchor="middle">2</text>
+  <text class="title" x="62" y="152">Studentize a statistic at every lag</text>
+  <text class="body" x="62" y="174">PACF, Bartlett-studentized ACF, inverse PACF, the Jirak band or a robust PACF —</text>
+  <text class="body" x="62" y="192">each statistic ships its own null standard error.</text>
+
+  <line class="flow" x1="380" y1="210" x2="380" y2="232" marker-end="url(#arr)"/>
+
+  <!-- step 3 -->
+  <rect class="box" x="8" y="236" width="744" height="88" rx="10"/>
+  <circle class="step" cx="36" cy="280" r="14"/>
+  <text class="stepnum" x="36" y="285" text-anchor="middle">3</text>
+  <text class="title" x="62" y="266">Apply a studentized threshold</text>
+  <text class="body" x="62" y="288">A cut <tspan class="mono">&#964;_n</tspan> in noise units — BIC-like <tspan class="mono">c = 1.5</tspan> by default; LIL, max-of-k and Gumbel</text>
+  <text class="body" x="62" y="306">bands available — calibrated so that pure noise dies out as <tspan class="mono">n</tspan> grows.</text>
+
+  <line class="flow" x1="380" y1="324" x2="380" y2="346" marker-end="url(#arr)"/>
+
+  <!-- step 4 -->
+  <rect class="box" x="8" y="350" width="744" height="88" rx="10"/>
+  <circle class="step" cx="36" cy="394" r="14"/>
+  <text class="stepnum" x="36" y="399" text-anchor="middle">4</text>
+  <text class="title" x="62" y="380">Clip: keep the last surviving lag</text>
+  <text class="body" x="62" y="402">The order is the last lag whose statistic noise cannot explain. The whole decision</text>
+  <text class="body" x="62" y="420">path returns with the fit — <tspan class="mono">autoplot()</tspan> shows it.</text>
+</svg>
