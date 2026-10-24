@@ -31,6 +31,7 @@ fn statistic(name: &str) -> Result<core::Statistic> {
         "inverse_pacf" => core::Statistic::InversePacf,
         "jirak_band" => core::Statistic::JirakBand,
         "pacf_robust" => core::Statistic::PacfRobust,
+        "acf_robust" => core::Statistic::AcfRobust,
         other => return Err(Error::Other(format!("unknown statistic '{other}'"))),
     })
 }
@@ -94,7 +95,10 @@ fn rs_fh_order(
     let cfg = core::FhConfig {
         statistic: statistic(statistic_name)?,
         threshold,
-        memory: opt_usize(memory),
+        memory: match opt_usize(memory) {
+            Some(k) => core::Memory::Fixed(k),
+            None => core::Memory::Default,
+        },
     };
     let r = rerr(core::fh_order(&x, cfg))?;
     Ok(list!(
@@ -105,6 +109,26 @@ fn rs_fh_order(
         studentized = r.studentized,
         statistic = statistic_name,
         threshold = threshold_name
+    ))
+}
+
+/// Jirak's refitted order estimator q^(5) (Rust core).
+/// @noRd
+#[extendr]
+fn rs_jirak_order(x: Vec<f64>, alpha: f64, memory: Nullable<i32>) -> Result<List> {
+    let cfg = core::JirakConfig {
+        alpha,
+        memory: match opt_usize(memory) {
+            Some(k) => core::Memory::Fixed(k),
+            None => core::Memory::Default,
+        },
+    };
+    let r = rerr(core::jirak_order(&x, cfg))?;
+    Ok(list!(
+        order = r.order as i32,
+        p_n = r.p_n as i32,
+        tau = r.tau,
+        per_dimension = r.per_dimension.iter().map(|q| *q as i32).collect::<Vec<i32>>()
     ))
 }
 
@@ -299,6 +323,7 @@ extendr_module! {
     mod tsorder;
     fn rs_ic_order;
     fn rs_fh_order;
+    fn rs_jirak_order;
     fn rs_svc_order;
     fn rs_hankel_svt_order;
     fn rs_hankel_rank_order;

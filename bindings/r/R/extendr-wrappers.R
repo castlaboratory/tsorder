@@ -22,6 +22,10 @@ rs_ic_order <- function(x, criterion_name, method_name, max_order) .Call(wrap__r
 #' @noRd
 rs_fh_order <- function(x, statistic_name, threshold_name, c, alpha, memory) .Call(wrap__rs_fh_order, x, statistic_name, threshold_name, c, alpha, memory)
 
+#' Jirak's refitted order estimator q^(5) (Rust core).
+#' @noRd
+rs_jirak_order <- function(x, alpha, memory) .Call(wrap__rs_jirak_order, x, alpha, memory)
+
 #' Bauer's SVC estimator of the McMillan degree (Rust core).
 #' @noRd
 rs_svc_order <- function(x, penalty_name, window_factor, window) .Call(wrap__rs_svc_order, x, penalty_name, window_factor, window)

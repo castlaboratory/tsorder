@@ -35,3 +35,23 @@ test_that("errors surface as R conditions, not crashes", {
   expect_error(fh_order(c(1, 2, 3)), "short")
   expect_error(ic_order(rnorm(100), criterion = "nope"), "criterion")
 })
+
+test_that("jirak_order recovers the AR order and order_select wraps it", {
+  set.seed(2)
+  x <- as.numeric(arima.sim(list(ar = c(1.2, -0.6)), 3000))
+  r <- jirak_order(x)
+  expect_equal(r$order, 2L)
+  expect_length(r$per_dimension, r$p_n)
+  expect_equal(max(r$per_dimension), r$order)
+  fit <- order_select(x, "jirak_refit")
+  expect_equal(fit$order, 2L)
+  expect_identical(fit$family, "refit")
+  expect_s3_class(generics::glance(fit), "tbl_df")
+})
+
+test_that("acf_robust selects the MA order through order_select", {
+  set.seed(3)
+  x <- as.numeric(arima.sim(list(ma = c(0.9, 0.5)), 3000))
+  fit <- order_select(x, "acf_robust")
+  expect_equal(fit$order, 2L)
+})

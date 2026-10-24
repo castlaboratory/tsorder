@@ -10,13 +10,14 @@
 #' @param method What to run. Information criteria: `"bic"`, `"aic"`,
 #'   `"aicc"`, `"hq"`, `"fpe"`, `"cat"`, `"mdl"`. Fine-Hwang threshold
 #'   statistics: `"pacf"` (default), `"acf_bartlett"`, `"inverse_pacf"`,
-#'   `"jirak"`, `"pacf_robust"`, `"long_ar_ols"`. McMillan degree:
+#'   `"jirak"`, `"jirak_refit"` (Jirak's refitted q-hat(5)),
+#'   `"pacf_robust"`, `"acf_robust"`, `"long_ar_ols"`. McMillan degree:
 #'   `"svc"`, `"hankel_rank"`, `"hankel_svt"`.
 #' @param ... Passed on to the underlying low-level function
 #'   ([ic_order()], [fh_order()], [svc_order()], [hankel_rank_order()],
 #'   [hankel_svt_order()]).
 #' @return An object of class `"tsorder_fit"` with elements `order`,
-#'   `method`, `family` (`"ic"`, `"fh"` or `"mcmillan"`), `path` (a tibble
+#'   `method`, `family` (`"ic"`, `"fh"`, `"refit"` or `"mcmillan"`), `path` (a tibble
 #'   of the decision path) and, for threshold methods, `tau`.
 #' @examples
 #' set.seed(1)
@@ -27,10 +28,16 @@
 order_select <- function(x, method = "pacf", ...) {
   ic <- c("bic", "aic", "aicc", "hq", "fpe", "cat", "mdl")
   fh <- c("pacf", "acf_bartlett", "inverse_pacf", "jirak", "pacf_robust",
-          "long_ar_ols", "long_ar_yw", "acf")
+          "acf_robust", "long_ar_ols", "long_ar_yw", "acf")
   mc <- c("svc", "hankel_rank", "hankel_svt")
-  method <- rlang::arg_match(method, c(fh, ic, mc))
-  if (method %in% ic) {
+  method <- rlang::arg_match(method, c(fh, ic, mc, "jirak_refit"))
+  if (method == "jirak_refit") {
+    r <- jirak_order(x, ...)
+    path <- tibble::tibble(dimension = seq_along(r$per_dimension),
+                           value = r$per_dimension)
+    out <- list(order = r$order, method = method, family = "refit",
+                path = path, tau = r$tau, p_n = r$p_n)
+  } else if (method %in% ic) {
     r <- ic_order(x, criterion = method, ...)
     path <- tibble::tibble(order = seq_along(r$values) - 1L, value = r$values)
     out <- list(order = r$order, method = method, family = "ic",
@@ -72,6 +79,7 @@ print.tsorder_fit <- function(x, ...) {
   what <- switch(x$family,
     ic = "order (argmin of the criterion)",
     fh = "order (last studentised statistic above the threshold)",
+    refit = "order (max over the per-dimension refits)",
     mcmillan = "McMillan degree (state dimension)"
   )
   cli::cli_h1("tsorder fit - {x$method}")

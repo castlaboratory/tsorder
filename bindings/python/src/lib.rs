@@ -34,6 +34,7 @@ fn statistic(name: &str) -> PyResult<core::Statistic> {
         "inverse_pacf" => core::Statistic::InversePacf,
         "jirak_band" => core::Statistic::JirakBand,
         "pacf_robust" => core::Statistic::PacfRobust,
+        "acf_robust" => core::Statistic::AcfRobust,
         other => return Err(PyValueError::new_err(format!("unknown statistic '{other}'"))),
     })
 }
@@ -87,7 +88,10 @@ fn fh_order<'py>(
     let cfg = core::FhConfig {
         statistic: self::statistic(statistic)?,
         threshold: thr,
-        memory,
+        memory: match memory {
+            Some(k) => core::Memory::Fixed(k),
+            None => core::Memory::Default,
+        },
     };
     let r = perr(core::fh_order(&x, cfg))?;
     let d = PyDict::new(py);
@@ -98,6 +102,31 @@ fn fh_order<'py>(
     d.set_item("studentized", r.studentized)?;
     d.set_item("statistic", statistic)?;
     d.set_item("threshold", threshold)?;
+    Ok(d)
+}
+
+/// Jirak's refitted order estimator q^(5): max over per-dimension refits.
+#[pyfunction]
+#[pyo3(signature = (x, alpha=0.05, memory=None))]
+fn jirak_order<'py>(
+    py: Python<'py>,
+    x: Vec<f64>,
+    alpha: f64,
+    memory: Option<usize>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let cfg = core::JirakConfig {
+        alpha,
+        memory: match memory {
+            Some(k) => core::Memory::Fixed(k),
+            None => core::Memory::Default,
+        },
+    };
+    let r = perr(core::jirak_order(&x, cfg))?;
+    let d = PyDict::new(py);
+    d.set_item("order", r.order)?;
+    d.set_item("p_n", r.p_n)?;
+    d.set_item("tau", r.tau)?;
+    d.set_item("per_dimension", r.per_dimension)?;
     Ok(d)
 }
 
@@ -282,6 +311,7 @@ fn robust_acf(x: Vec<f64>, max_lag: usize) -> PyResult<Vec<f64>> {
 fn tsorder(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ic_order, m)?)?;
     m.add_function(wrap_pyfunction!(fh_order, m)?)?;
+    m.add_function(wrap_pyfunction!(jirak_order, m)?)?;
     m.add_function(wrap_pyfunction!(svc_order, m)?)?;
     m.add_function(wrap_pyfunction!(hankel_rank_order, m)?)?;
     m.add_function(wrap_pyfunction!(hankel_svt_order, m)?)?;

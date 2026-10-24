@@ -7,7 +7,7 @@
 use crate::acov::{acf, autocovariance, bartlett_se};
 use crate::levinson::levinson;
 use crate::linalg::ols;
-use crate::threshold::{polylog_memory, Threshold};
+use crate::threshold::{polylog_memory, Memory, Threshold};
 use crate::{check_input, Result};
 
 /// Which partial description Σ̂ of the process to threshold.
@@ -62,10 +62,23 @@ pub enum Statistic {
     /// memory is the short poly-log window (per-lag estimation errors are
     /// independent across lags, so long memories break positive definiteness).
     PacfRobust,
+    /// **Experimental.** Robust autocorrelation (the Ma & Genton 2000 bounded
+    /// Q_n-ratio form, [`crate::robust::robust_autocorrelation`]) studentized
+    /// by Bartlett's formula computed from the robust ACF itself, inflated by
+    /// 1.15. Monte Carlo calibration (white noise, MA(1), MA(2), AR(2);
+    /// n = 500–8000; 400 reps) puts the null sd of
+    /// `ρ̂_rob(k) / se_Bartlett(ρ̂_rob)` at 1.05–1.12 across all designs, so
+    /// unlike [`Statistic::PacfRobust`] the plug-in pivot is nearly
+    /// process-independent and 1.15 is a mild safety margin, pending exact
+    /// theory (the asymptotic variance of the ratio estimator differs from
+    /// the classical ACF's; Lévy-Leduc et al. 2011 give it for Gaussian
+    /// long-memory processes). Targets MA order with a 25 % breakdown point
+    /// against additive outliers, where [`Statistic::AcfBartlett`] has none.
+    AcfRobust,
 }
 
 impl Statistic {
-    pub const ALL: [Statistic; 8] = [
+    pub const ALL: [Statistic; 9] = [
         Statistic::Pacf,
         Statistic::LongArYw,
         Statistic::LongArOls,
@@ -74,6 +87,7 @@ impl Statistic {
         Statistic::InversePacf,
         Statistic::JirakBand,
         Statistic::PacfRobust,
+        Statistic::AcfRobust,
     ];
 
     pub fn name(self) -> &'static str {
@@ -86,6 +100,7 @@ impl Statistic {
             Statistic::InversePacf => "inverse_pacf",
             Statistic::JirakBand => "jirak_band",
             Statistic::PacfRobust => "pacf_robust",
+            Statistic::AcfRobust => "acf_robust",
         }
     }
 
@@ -112,7 +127,10 @@ impl Statistic {
             | Statistic::LongArOls
             | Statistic::JirakBand
             | Statistic::PacfRobust => "AR",
-            Statistic::Acf | Statistic::AcfBartlett | Statistic::InversePacf => "MA",
+            Statistic::Acf
+            | Statistic::AcfBartlett
+            | Statistic::InversePacf
+            | Statistic::AcfRobust => "MA",
         }
     }
 
@@ -193,6 +211,13 @@ impl Statistic {
                 let se = vec![2.0 / (n as f64).sqrt(); p_n];
                 Ok((l.pacf, se))
             }
+            Statistic::AcfRobust => {
+                let r = crate::robust::robust_autocorrelation(x, p_n)?;
+                // Bartlett plug-in from the robust ACF itself, with the
+                // Monte Carlo safety margin (see the enum documentation).
+                let se: Vec<f64> = bartlett_se(&r, n)[1..].iter().map(|s| 1.15 * s).collect();
+                Ok((r[1..].to_vec(), se))
+            }
         }
     }
 }
@@ -202,9 +227,9 @@ impl Statistic {
 pub struct FhConfig {
     pub statistic: Statistic,
     pub threshold: Threshold,
-    /// Growing memory `p_n`; `None` → the statistic's default
-    /// ([`Statistic::default_memory`]).
-    pub memory: Option<usize>,
+    /// Growing memory rule; [`Memory::Default`] uses the statistic's own
+    /// default ([`Statistic::default_memory`]).
+    pub memory: Memory,
 }
 
 impl Default for FhConfig {
@@ -212,7 +237,7 @@ impl Default for FhConfig {
         FhConfig {
             statistic: Statistic::Pacf,
             threshold: Threshold::default(),
-            memory: None,
+            memory: Memory::Default,
         }
     }
 }
@@ -237,9 +262,7 @@ pub struct FhResult {
 pub fn fh_order(x: &[f64], config: FhConfig) -> Result<FhResult> {
     let n = x.len();
     config.threshold.validate()?;
-    let p_n = config
-        .memory
-        .unwrap_or_else(|| config.statistic.default_memory(n));
+    let p_n = config.memory.resolve(n, config.statistic.default_memory(n));
     if p_n < 1 {
         return Err(crate::Error::Invalid("memory p_n must be >= 1"));
     }
@@ -264,6 +287,104 @@ pub fn fh_order(x: &[f64], config: FhConfig) -> Result<FhResult> {
         tau,
         values,
         studentized,
+    })
+}
+
+/// Configuration of [`jirak_order`] (Jirak 2012, q̂⁽⁵⁾).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct JirakConfig {
+    /// Level of the Gumbel band. A fixed `alpha` controls the family-wise
+    /// overestimation probability at ≈ `alpha`; `alpha_n → 0` slowly gives the
+    /// consistent variant (Jirak 2012, Thm 2.4).
+    pub alpha: f64,
+    /// Growing memory rule for the maximal dimension `d_n`.
+    pub memory: Memory,
+}
+
+impl Default for JirakConfig {
+    fn default() -> Self {
+        JirakConfig {
+            alpha: 0.05,
+            memory: Memory::Default,
+        }
+    }
+}
+
+/// Output of [`jirak_order`].
+#[derive(Debug, Clone)]
+pub struct JirakResult {
+    pub config: JirakConfig,
+    /// q̂⁽⁵⁾: the maximum of the per-dimension estimates.
+    pub order: usize,
+    /// Maximal fitting dimension `d_n` actually used.
+    pub p_n: usize,
+    /// Gumbel threshold actually used (studentized scale, normalized by `d_n`).
+    pub tau: f64,
+    /// Per-dimension estimate q̂(k) for `k = 1..=d_n`: the last lag of the
+    /// Yule–Walker AR(`k`) fit whose studentized coefficient exceeds `tau`.
+    pub per_dimension: Vec<usize>,
+}
+
+/// Jirak's (2012, *Ann. Statist.* 40(2), eq. 2.14) refitted order estimator
+/// q̂⁽⁵⁾: fit Yule–Walker AR(`k`) for every dimension `k ≤ d_n`, studentize
+/// each coefficient vector with its exact null standard error
+/// `se_i = sqrt(γ̂*_ii(k) · σ̂²(k) / n)` (the [`Statistic::JirakBand`]
+/// studentization at dimension `k`), apply the common Gumbel threshold
+/// calibrated on the maximal dimension `d_n`, and return the **largest**
+/// per-dimension last-crossing.
+///
+/// The refits recover power that the single full-dimension fit
+/// ([`Statistic::JirakBand`] inside [`fh_order`]) can lose: a coefficient
+/// that is small in the AR(`d_n`) representation may be large in a smaller
+/// one, and under H₀ the extra comparisons are already paid for by the
+/// `d_n`-normalized threshold. Costs `O(d_n⁴)` — negligible for the
+/// poly-log default (`d_n = ⌈2 log n⌉`).
+pub fn jirak_order(x: &[f64], config: JirakConfig) -> Result<JirakResult> {
+    let n = x.len();
+    if !(config.alpha.is_finite() && config.alpha > 0.0 && config.alpha < 1.0) {
+        return Err(crate::Error::Invalid("alpha must be in (0, 1)"));
+    }
+    let p_n = config
+        .memory
+        .resolve(n, Statistic::JirakBand.default_memory(n));
+    if p_n < 1 {
+        return Err(crate::Error::Invalid("memory p_n must be >= 1"));
+    }
+    check_input(x, 2 * p_n + 2)?;
+    let r = autocovariance(x, p_n)?;
+    let tau = Threshold::Gumbel {
+        alpha: config.alpha,
+    }
+    .value(n, p_n);
+    let nf = n as f64;
+    let mut per_dimension = Vec::with_capacity(p_n);
+    for k in 1..=p_n {
+        let l = levinson(&r[..=k])?;
+        let mut g = crate::linalg::SquareMatrix::zeros(k);
+        for i in 0..k {
+            for j in 0..k {
+                g.set(i, j, r[i.abs_diff(j)]);
+            }
+        }
+        let ch = g.cholesky()?;
+        let diag = crate::linalg::SquareMatrix::cholesky_inverse_diag(&ch);
+        let sigma2 = l.sigma2[k];
+        let q_k = l
+            .phi_last
+            .iter()
+            .zip(&diag)
+            .rposition(|(phi, d)| phi.abs() / (d * sigma2 / nf).sqrt() > tau)
+            .map(|i| i + 1)
+            .unwrap_or(0);
+        per_dimension.push(q_k);
+    }
+    let order = per_dimension.iter().copied().max().unwrap_or(0);
+    Ok(JirakResult {
+        config,
+        order,
+        p_n,
+        tau,
+        per_dimension,
     })
 }
 

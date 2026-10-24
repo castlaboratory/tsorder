@@ -13,7 +13,8 @@ order_select(x, method = "pacf", ...)
 \item{method}{What to run. Information criteria: \code{"bic"}, \code{"aic"},
 \code{"aicc"}, \code{"hq"}, \code{"fpe"}, \code{"cat"}, \code{"mdl"}. Fine-Hwang threshold
 statistics: \code{"pacf"} (default), \code{"acf_bartlett"}, \code{"inverse_pacf"},
-\code{"jirak"}, \code{"pacf_robust"}, \code{"long_ar_ols"}. McMillan degree:
+\code{"jirak"}, \code{"jirak_refit"} (Jirak's refitted q-hat(5)),
+\code{"pacf_robust"}, \code{"acf_robust"}, \code{"long_ar_ols"}. McMillan degree:
 \code{"svc"}, \code{"hankel_rank"}, \code{"hankel_svt"}.}
 
 \item{...}{Passed on to the underlying low-level function
@@ -22,7 +23,7 @@ statistics: \code{"pacf"} (default), \code{"acf_bartlett"}, \code{"inverse_pacf"
 }
 \value{
 An object of class \code{"tsorder_fit"} with elements \code{order},
-\code{method}, \code{family} (\code{"ic"}, \code{"fh"} or \code{"mcmillan"}), \code{path} (a tibble
+\code{method}, \code{family} (\code{"ic"}, \code{"fh"}, \code{"refit"} or \code{"mcmillan"}), \code{path} (a tibble
 of the decision path) and, for threshold methods, \code{tau}.
 }
 \description{

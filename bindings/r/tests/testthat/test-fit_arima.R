@@ -40,3 +40,12 @@ test_that("tidy and glance follow broom conventions", {
   gl2 <- generics::glance(order_select(x, method = "bic"))
   expect_true(is.na(gl2$tau))
 })
+
+test_that("as_tibble() returns the tidy decision path", {
+  set.seed(5)
+  x <- as.numeric(arima.sim(list(ar = c(1.2, -0.6)), 600))
+  fit <- order_select(x)
+  expect_identical(tibble::as_tibble(fit), generics::tidy(fit))
+  expect_true(all(c("lag", "studentized", "kept") %in%
+                    names(tibble::as_tibble(fit))))
+})

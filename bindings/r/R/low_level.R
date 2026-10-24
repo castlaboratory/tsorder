@@ -32,8 +32,9 @@ ic_order <- function(x, criterion = "bic", method = "yw", max_order = NULL) {
 #' @inheritParams ic_order
 #' @param statistic One of `"pacf"` (AR, default), `"acf_bartlett"` (MA),
 #'   `"inverse_pacf"` (MA), `"jirak_band"` (AR, exact Jirak-2012
-#'   studentisation), `"pacf_robust"` (experimental, 25% breakdown),
-#'   `"long_ar_yw"`, `"long_ar_ols"`, `"acf"`.
+#'   studentisation), `"pacf_robust"` and `"acf_robust"` (experimental,
+#'   25% breakdown against additive outliers), `"long_ar_yw"`,
+#'   `"long_ar_ols"`, `"acf"`.
 #' @param threshold One of `"bic"` (default, `sqrt(c log n)`), `"lil"`,
 #'   `"maxk"`, `"gumbel"` (level `alpha`), `"fixed"` (value `c`).
 #' @param c Threshold constant (default 1.5).
@@ -51,6 +52,33 @@ fh_order <- function(x, statistic = "pacf", threshold = "bic", c = 1.5,
                      alpha = 0.05, memory = NULL) {
   rs_fh_order(as.double(x), statistic, threshold, c, alpha,
               if (is.null(memory)) NULL else as.integer(memory))
+}
+
+#' Jirak's refitted AR order estimator
+#'
+#' Jirak's (2012) q-hat(5): fits Yule-Walker AR(k) for every dimension
+#' `k <= p_n`, studentises each coefficient vector with its exact null
+#' standard error, applies a common Gumbel threshold calibrated on the
+#' maximal dimension, and returns the largest per-dimension last-crossing.
+#' The refits recover power that the single full-dimension band
+#' (`fh_order(statistic = "jirak_band", threshold = "gumbel")`) can lose
+#' when a coefficient is small in the long-AR representation.
+#'
+#' @inheritParams ic_order
+#' @param alpha Level of the Gumbel band (default 0.05); a slowly vanishing
+#'   level gives the consistent variant.
+#' @param memory Maximal fitting dimension `p_n`; `NULL` uses the default
+#'   `ceiling(2 log n)`.
+#' @return A list with `order` (the maximum), `p_n`, `tau` and the
+#'   `per_dimension` estimates for `k = 1:p_n`.
+#' @examples
+#' set.seed(1)
+#' x <- arima.sim(list(ar = c(1.2, -0.6)), 400)
+#' jirak_order(x)$order
+#' @export
+jirak_order <- function(x, alpha = 0.05, memory = NULL) {
+  rs_jirak_order(as.double(x), alpha,
+                 if (is.null(memory)) NULL else as.integer(memory))
 }
 
 #' McMillan degree by Bauer's SVC criterion

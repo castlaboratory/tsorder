@@ -54,7 +54,8 @@ pub use robust::{qn, robust_autocorrelation, robust_autocovariance, shrink_to_ps
 #[cfg(feature = "ensemble")]
 pub use select::{ensemble_order, EnsembleResult, EnsembleRule};
 pub use select::{fh_order, FhConfig, FhResult, Statistic};
-pub use threshold::{polylog_memory, power_memory, Threshold};
+pub use select::{jirak_order, JirakConfig, JirakResult};
+pub use threshold::{polylog_memory, power_memory, Memory, Threshold};
 
 /// Library error type.
 #[derive(Debug, Clone, PartialEq)]

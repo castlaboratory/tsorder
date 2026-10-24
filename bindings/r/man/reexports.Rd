@@ -5,6 +5,7 @@
 \alias{reexports}
 \alias{tidy}
 \alias{glance}
+\alias{as_tibble}
 \alias{autoplot}
 \title{Objects exported from other packages}
 \keyword{internal}
@@ -16,5 +17,7 @@ below to see their documentation.
   \item{generics}{\code{\link[generics:glance]{glance()}}, \code{\link[generics:tidy]{tidy()}}}
 
   \item{ggplot2}{\code{\link[ggplot2:autoplot]{autoplot()}}}
+
+  \item{tibble}{\code{\link[tibble:as_tibble]{as_tibble()}}}
 }}
 

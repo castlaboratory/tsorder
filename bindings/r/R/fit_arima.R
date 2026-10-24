@@ -29,7 +29,7 @@
 fit_arima <- function(x, method = "pacf", d = NULL, include.mean = TRUE, ...) {
   if (is.null(d)) d <- integration_order(as.double(x))$d
   xd <- if (d > 0) diff(as.double(x), differences = d) else as.double(x)
-  ma_methods <- c("acf_bartlett", "inverse_pacf", "acf")
+  ma_methods <- c("acf_bartlett", "inverse_pacf", "acf", "acf_robust")
   if (identical(method, "hr")) {
     sel <- hannan_rissanen(xd, ...)
     ord <- c(sel$p, d, sel$q)
@@ -91,4 +91,22 @@ glance.tsorder_fit <- function(x, ...) {
     n = as.integer(x$n),
     tau = if (is.null(x$tau)) NA_real_ else x$tau
   )
+}
+
+#' @importFrom tibble as_tibble
+#' @export
+tibble::as_tibble
+
+#' Coerce a tsorder fit to a tibble
+#'
+#' The decision path as a tibble -- the same table as [tidy.tsorder_fit()],
+#' provided so `as_tibble()` works directly on [order_select()] results.
+#'
+#' @param x A [order_select()] result.
+#' @param ... Unused.
+#' @return A tibble: for threshold methods, `lag`, `statistic`,
+#'   `studentized` and `kept`; otherwise the candidate column and `value`.
+#' @export
+as_tibble.tsorder_fit <- function(x, ...) {
+  tidy.tsorder_fit(x, ...)
 }

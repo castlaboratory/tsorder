@@ -18,8 +18,9 @@ fh_order(
 
 \item{statistic}{One of \code{"pacf"} (AR, default), \code{"acf_bartlett"} (MA),
 \code{"inverse_pacf"} (MA), \code{"jirak_band"} (AR, exact Jirak-2012
-studentisation), \code{"pacf_robust"} (experimental, 25\% breakdown),
-\code{"long_ar_yw"}, \code{"long_ar_ols"}, \code{"acf"}.}
+studentisation), \code{"pacf_robust"} and \code{"acf_robust"} (experimental,
+25\% breakdown against additive outliers), \code{"long_ar_yw"},
+\code{"long_ar_ols"}, \code{"acf"}.}
 
 \item{threshold}{One of \code{"bic"} (default, \verb{sqrt(c log n)}), \code{"lil"},
 \code{"maxk"}, \code{"gumbel"} (level \code{alpha}), \code{"fixed"} (value \code{c}).}
