@@ -4,6 +4,10 @@ This is a new submission (first release of tsorder).
 
 0 errors | 0 warnings | 1 note
 
+* NOTE "Possibly misspelled words in DESCRIPTION": AICc, FPE and MDL are
+  standard acronyms of model-selection criteria; Hankel, Hannan, Hwang and
+  Jirak are surnames (of the authors of the implemented methods) and the
+  Hankel matrix.
 * NOTE "Found non-API call to R: 'R_NamespaceRegistry'": this call is made
   by the extendr runtime (the Rust-R bridge this package is built on), not
   by package code; the extendr project tracks C API compliance upstream.
