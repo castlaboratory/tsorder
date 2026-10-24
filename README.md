@@ -9,16 +9,16 @@
 
 Order selection for time-series models — classical information criteria and
 Fine–Hwang threshold estimators with pluggable statistics — in a dependency-free
-Rust core with R and Python bindings (bindings: planned).
+Rust core with R and Python bindings.
 
 **Site & API reference:** <https://castlaboratory.github.io/tsorder/>
 
 ```text
 tsorder/
 ├── crates/tsorder-core/   Rust core (dependency-free)
-├── bindings/r/            R package (extendr, pkgdown) — planned
-├── bindings/python/       Python package (PyO3/maturin) — planned
-├── benchmark/             benchmark runner and (future) results
+├── bindings/r/            R package (extendr, pkgdown)
+├── bindings/python/       Python package (PyO3/maturin)
+├── benchmark/             benchmark runner and results
 └── site/                  landing page; rustdoc is published under /api by CI
 ```
 
