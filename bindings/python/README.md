@@ -1,5 +1,7 @@
 # tsorder (Python)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23607404.svg)](https://doi.org/10.5281/zenodo.23607404)
+
 Thin PyO3 shell over the dependency-free Rust core `tsorder-core` (no
 statistical logic lives here). Accepts lists, numpy arrays or pandas
 Series; returns plain dicts. Bit-identical to the R package by

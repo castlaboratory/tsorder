@@ -26,6 +26,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://castlaboratory.github.io/tsorder/"
 Repository = "https://github.com/castlaboratory/tsorder"
+Citation = "https://doi.org/10.5281/zenodo.23607404"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
