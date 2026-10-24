@@ -1,4 +1,4 @@
-# tsorder (development version)
+# tsorder 0.1.0
 
 * New estimators: `jirak_order()` (Jirak's refitted q-hat(5), also as
   `order_select(method = "jirak_refit")`) and the experimental
@@ -12,8 +12,6 @@
   path.
 * New vignette comparing tsorder with `stats::ar()` and
   `forecast::auto.arima()`.
-
-# tsorder 0.1.0
 
 * First release: information criteria (AIC, AICc, BIC, HQ, FPE, CAT, MDL
   over Yule-Walker, Burg or conditional-OLS fits), Fine-Hwang threshold
