@@ -6,3 +6,6 @@
 ^_pkgdown\.yml$
 ^docs$
 ^LICENSE\.md$
+^doc$
+^Meta$
+^cran-comments\.md$

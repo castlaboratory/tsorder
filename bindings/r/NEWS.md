@@ -1,3 +1,18 @@
+# tsorder (development version)
+
+* New estimators: `jirak_order()` (Jirak's refitted q-hat(5), also as
+  `order_select(method = "jirak_refit")`) and the experimental
+  `"acf_robust"` statistic (Ma-Genton Q_n-ratio ACF with a Monte
+  Carlo-calibrated Bartlett plug-in studentisation; 25% breakdown against
+  additive outliers, MA-targeted).
+* fable/tidyverts integration: `TSORDER()` is a `fabletools` model
+  definition fitting through `fit_arima()`, so tsorder works inside
+  `model()`, `forecast()`, `accuracy()` and friends.
+* `as_tibble()` on `order_select()` results returns the tidy decision
+  path.
+* New vignette comparing tsorder with `stats::ar()` and
+  `forecast::auto.arima()`.
+
 # tsorder 0.1.0
 
 * First release: information criteria (AIC, AICc, BIC, HQ, FPE, CAT, MDL

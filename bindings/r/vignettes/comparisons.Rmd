@@ -1,0 +1,130 @@
+---
+title: "How tsorder compares with stats::ar and auto.arima"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{How tsorder compares with stats::ar and auto.arima}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+has_forecast <- requireNamespace("forecast", quietly = TRUE)
+```
+
+The natural question about a new order selector is how it behaves next to
+the tools everyone already uses: `stats::ar()` (AIC over Yule-Walker fits)
+and `forecast::auto.arima()` (stepwise AICc search). This vignette runs a
+small, honest comparison on simulated data where the true order is known.
+It is intentionally light — a handful of replications per scenario so the
+vignette builds quickly; the repository's benchmark (`benchmark/` in the
+sources) runs the same kind of comparison with hundreds of replications
+per design and is where the package's defaults come from.
+
+Two things are worth keeping in mind while reading:
+
+* On a clean, well-separated AR process *every* reasonable method agrees;
+  differences show up at short samples, near-cancellation, seasonality and
+  contamination.
+* tsorder's threshold estimators answer a slightly different question than
+  a criterion: not "which model predicts best" but "which lags are
+  distinguishable from noise". Under-and-over-selection are not symmetric
+  for the two goals.
+
+## Setup
+
+```{r}
+library(tsorder)
+
+simulate_ar <- function(n, phi, seed) {
+  set.seed(seed)
+  as.numeric(arima.sim(list(ar = phi), n))
+}
+
+# One replication: the selected AR order for each method.
+select_all <- function(x) {
+  c(
+    tsorder_pacf  = order_select(x, "pacf")$order,
+    tsorder_jirak = order_select(x, "jirak_refit")$order,
+    tsorder_bic   = ic_order(x, "bic")$order,
+    stats_ar      = stats::ar(x, method = "yule-walker")$order
+  )
+}
+```
+
+## A clear AR(2): everyone agrees
+
+```{r}
+x <- simulate_ar(500, c(1.2, -0.6), seed = 1)
+select_all(x)
+```
+
+## Where methods part ways: rate across replications
+
+An AR(4) whose last coefficient is moderate, at a short sample. `stats::ar`
+maximises fit with AIC, which is not consistent and tends to overshoot;
+BIC and the threshold estimators pay a growing price per lag.
+
+```{r}
+reps <- 20
+hits <- sapply(1:reps, function(r) {
+  x <- simulate_ar(300, c(0.5, 0, 0, 0.3), seed = 100 + r)
+  select_all(x) == 4L
+})
+rowMeans(hits)
+```
+
+The exact rates move with the seed set — 20 replications is a smoke test,
+not an estimate — but the ordering is stable in the full benchmark:
+AIC-type rules over-select on short samples, the PACF-clip and BIC land on
+the truth or just below it.
+
+## Against auto.arima on ARMA
+
+`fit_arima()` is tsorder's end-to-end path: estimate `d`, select the
+orders, hand everything to `stats::arima()`. `method = "hr"` selects
+`p` and `q` jointly by Hannan-Rissanen, which is the closest analogue of
+what `auto.arima` does, at a fraction of the fits.
+
+```{r, eval = has_forecast}
+set.seed(7)
+y <- as.numeric(arima.sim(list(ar = 0.7, ma = 0.4), 400))
+
+fit_ts <- fit_arima(y, method = "hr")
+fit_aa <- forecast::auto.arima(y, seasonal = FALSE)
+
+rbind(
+  tsorder    = fit_ts$arma[c(1, 6, 2)],
+  auto.arima = fit_aa$arma[c(1, 6, 2)]
+)
+```
+
+```{r, eval = has_forecast}
+# Both are plain stats::arima fits, so forecast() applies to either.
+h <- 12
+f_ts <- forecast::forecast(fit_ts, h = h)
+f_aa <- forecast::forecast(fit_aa, h = h)
+round(cbind(tsorder = f_ts$mean, auto.arima = f_aa$mean)[1:6, ], 3)
+```
+
+In the repository benchmark the two track each other closely on
+well-specified ARMA — the 1-step prediction error differs by at most about
+1% — which is the expected reading: when the model family is right, order
+selection is not where forecasts are won. The differences that matter are
+elsewhere:
+
+* **contamination**: with a few percent of additive outliers the classical
+  PACF/ACF paths collapse while `pacf_robust` and `acf_robust` keep
+  selecting (see `vignette("tsorder")`);
+* **observation noise**: measurement noise turns an AR(p) into an
+  ARMA(p, p) and misleads every AR-order selector, but leaves the McMillan
+  degree — `order_select(x, "svc")` — untouched;
+* **cost**: the Hannan-Rissanen proposal is a few least-squares passes, so
+  it can seed or replace a stepwise search where thousands of series are
+  fit (the `foresight` Rust crate uses it exactly that way).
+
+## Session info
+
+```{r}
+sessionInfo()
+```

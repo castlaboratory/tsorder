@@ -13,6 +13,7 @@
 ## Rust
 
 The package follows the CRAN policy for Rust: SystemRequirements declares
-Cargo and rustc (>= 1.81); the crate sources are vendored inside the
-package (src/rust, no network access at build time); compilation uses at
-most two jobs.
+Cargo and rustc (>= 1.81); the tsorder-core crate is vendored inside the
+package (src/rust) and the remaining crate dependencies are vendored into
+src/rust/vendor.tar.xz with rextendr::vendor_pkgs() before submission, so
+the build needs no network access; compilation uses at most two jobs.
