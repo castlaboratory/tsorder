@@ -27,7 +27,9 @@ navbar:
 
 reference:
 - title: Select an order
-  contents: [order_select, autoplot.tsorder_fit]
+  contents: [order_select, autoplot.tsorder_fit, tidy.tsorder_fit, glance.tsorder_fit]
+- title: Select and fit
+  contents: [fit_arima]
 - title: Information criteria and threshold estimators
   contents: [ic_order, fh_order]
 - title: McMillan degree (state dimension)
@@ -36,3 +38,5 @@ reference:
   contents: [eacf, hannan_rissanen, integration_order]
 - title: Robust building blocks
   contents: [qn, robust_acf]
+- title: Re-exports
+  contents: [reexports]

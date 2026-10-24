@@ -19,5 +19,15 @@ tsorder.integration_order(x)              # how many differences
 tsorder.hannan_rissanen(x)                # ARMA (p, q)
 ```
 
+Handing off to `statsmodels` is one line -- the selected orders drop
+straight into `ARIMA(order=(p, d, q))`:
+
+```python
+d = tsorder.integration_order(x)["d"]
+sel = tsorder.hannan_rissanen(x)          # or fh_order / ic_order
+from statsmodels.tsa.arima.model import ARIMA
+fit = ARIMA(x, order=(sel["p"], d, sel["q"])).fit()
+```
+
 See the [project page](https://castlaboratory.github.io/tsorder/) and the
 [R package site](https://castlaboratory.github.io/tsorder/r/).

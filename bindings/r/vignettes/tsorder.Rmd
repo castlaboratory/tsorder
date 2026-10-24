@@ -76,6 +76,32 @@ c(ar_order_bic = ic_order(noisy, "bic")$order,
   mcmillan = svc_order(noisy)$order)
 ```
 
+## From selection to a fitted model
+
+`fit_arima()` closes the loop: it estimates the order of integration,
+selects the order on the differenced series, and returns a standard
+`stats::arima()` fit -- which means the rest of the ecosystem just works,
+including `forecast`:
+
+```{r}
+fit <- fit_arima(x)           # ARIMA(2, 0, 0) here
+fit
+predict(fit, n.ahead = 4)$pred
+```
+
+```{r, eval = requireNamespace("forecast", quietly = TRUE)}
+forecast::forecast(fit, h = 6)
+```
+
+`order_select()` results also follow the broom conventions, for tidy
+pipelines:
+
+```{r}
+f <- order_select(x)
+generics::glance(f)
+head(generics::tidy(f))
+```
+
 ## How many differences
 
 ```{r}
