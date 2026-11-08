@@ -15,11 +15,12 @@
 #' @param ... Passed on to [fit_arima()] (e.g. `d`, selector options).
 #' @return A model definition usable inside `fabletools::model()`.
 #' @examples
-#' \dontrun{
-#' library(fabletools)
-#' as_tsibble(USAccDeaths) |>
-#'   model(tsorder = TSORDER(value)) |>
-#'   forecast(h = 12)
+#' if (requireNamespace("fabletools", quietly = TRUE) &&
+#'     requireNamespace("tsibble", quietly = TRUE) &&
+#'     requireNamespace("distributional", quietly = TRUE)) {
+#'   tsibble::as_tsibble(sunspot.year) |>
+#'     fabletools::model(tsorder = TSORDER(value)) |>
+#'     fabletools::forecast(h = 12)
 #' }
 #' @export
 TSORDER <- function(formula, method = "hr", ...) {

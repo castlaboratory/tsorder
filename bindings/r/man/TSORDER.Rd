@@ -29,10 +29,11 @@ Requires the suggested packages \code{fabletools}, \code{tsibble} and
 \code{distributional}.
 }
 \examples{
-\dontrun{
-library(fabletools)
-as_tsibble(USAccDeaths) |>
-  model(tsorder = TSORDER(value)) |>
-  forecast(h = 12)
+if (requireNamespace("fabletools", quietly = TRUE) &&
+    requireNamespace("tsibble", quietly = TRUE) &&
+    requireNamespace("distributional", quietly = TRUE)) {
+  tsibble::as_tsibble(sunspot.year) |>
+    fabletools::model(tsorder = TSORDER(value)) |>
+    fabletools::forecast(h = 12)
 }
 }

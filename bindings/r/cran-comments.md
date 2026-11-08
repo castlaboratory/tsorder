@@ -1,17 +1,25 @@
 This is a new submission (first release of tsorder).
 
-This resubmission fixes the URL flagged by the incoming pre-tests
-(https://extendr.github.io/ in README.md replaced by its permanent
-redirect target https://extendr.rs/).
+This resubmission addresses the two points raised in the manual
+inspection of 2026-11-08:
+
+* every acronym in the Description field is now spelled out on first use
+  (AIC, AICc, BIC, HQ, FPE, CAT, MDL, PACF, ACF, SVC, ARMA);
+* the only \dontrun{} example (TSORDER(), the fabletools model
+  definition) is now unwrapped: it runs in well under a second and is
+  guarded by requireNamespace() on the suggested packages it needs
+  (fabletools, tsibble, distributional). No example remains wrapped in
+  \dontrun{} or \donttest{}.
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
-* NOTE "Possibly misspelled words in DESCRIPTION": AICc, FPE and MDL are
-  standard acronyms of model-selection criteria; Hankel, Hannan, Hwang and
-  Jirak are surnames (of the authors of the implemented methods) and the
-  Hankel matrix.
+* NOTE "Possibly misspelled words in DESCRIPTION" (incoming checks only;
+  the local check is clean): the remaining flagged words are acronyms of
+  model-selection criteria and statistics, each spelled out on first use
+  (AICc, FPE, MDL, PACF, ACF, SVC, ARMA), and surnames of the authors of
+  the implemented methods (Hankel, Hannan, Hwang, Jirak, Parzen, Rissanen).
 
 ## Test environments
 
