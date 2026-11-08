@@ -1,7 +1,7 @@
 This is a new submission (first release of tsorder).
 
 This resubmission addresses the two points raised in the manual
-inspection of 2026-11-08:
+inspection:
 
 * every acronym in the Description field is now spelled out on first use
   (AIC, AICc, BIC, HQ, FPE, CAT, MDL, PACF, ACF, SVC, ARMA);
@@ -13,17 +13,19 @@ inspection of 2026-11-08:
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes (local, --as-cran)
 
-* NOTE "Possibly misspelled words in DESCRIPTION" (incoming checks only;
-  the local check is clean): the remaining flagged words are acronyms of
-  model-selection criteria and statistics, each spelled out on first use
-  (AICc, FPE, MDL, PACF, ACF, SVC, ARMA), and surnames of the authors of
-  the implemented methods (Hankel, Hannan, Hwang, Jirak, Parzen, Rissanen).
+The incoming checks are expected to add two NOTEs:
+
+* new submission;
+* "Possibly misspelled words in DESCRIPTION": AICc, FPE, MDL, PACF and SVC
+  are acronyms spelled out on first use; AOS is part of a DOI; Hannan,
+  Jirak, Parzen and Rissanen are surnames of the authors of the implemented
+  methods; Hankel names the Hankel matrix.
 
 ## Test environments
 
-* local macOS (R 4.6.0), GitHub Actions ubuntu-latest and macos-latest.
+* local macOS (R 4.6.0).
 
 ## Rust
 
