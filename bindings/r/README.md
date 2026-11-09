@@ -91,6 +91,6 @@ Levinson PACF matches `stats::ar.yw` to 1e-10, `qn()` matches
 
 * [Package site](https://castlaboratory.github.io/tsorder/r/) ·
   [project page](https://castlaboratory.github.io/tsorder/) ·
-  [Rust API docs](https://castlaboratory.github.io/tsorder/api/)
+  [Rust API docs](https://castlaboratory.github.io/tsorder/api/tsorder_core/)
 * Cite via the [Zenodo DOI](https://doi.org/10.5281/zenodo.23607404) or
   `citation("tsorder")`.

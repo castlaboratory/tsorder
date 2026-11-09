@@ -39,6 +39,8 @@ jobs:
           cargo doc --workspace --no-deps
           rm -rf site/api
           cp -R target/doc site/api
+          # rustdoc writes no top-level index; send /api/ to the crate page.
+          printf '%s\n' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=tsorder_core/"><link rel="canonical" href="tsorder_core/"><a href="tsorder_core/">tsorder_core</a>' > site/api/index.html
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true

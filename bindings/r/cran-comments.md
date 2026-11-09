@@ -1,6 +1,12 @@
 This is a new submission (first release of tsorder).
 
-This resubmission addresses the two points raised in the manual
+This resubmission fixes the invalid URL reported by the incoming checks:
+the "Rust API docs" link in README.md now points to
+https://castlaboratory.github.io/tsorder/api/tsorder_core/ (the previous
+https://castlaboratory.github.io/tsorder/api/ had no index page and
+returned 404).
+
+The previous resubmission addressed the two points raised in the manual
 inspection:
 
 * every acronym in the Description field is now spelled out on first use
