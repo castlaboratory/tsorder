@@ -142,8 +142,9 @@ mod tests {
         let r: Vec<f64> = (0..6).map(|k| phi.powi(k) / (1.0 - phi * phi)).collect();
         let l = levinson(&r).unwrap();
         assert!((l.pacf[0] - phi).abs() < 1e-12);
-        for k in 1..5 {
-            assert!(l.pacf[k].abs() < 1e-10, "pacf[{k}] = {}", l.pacf[k]);
+        assert_eq!(l.pacf.len(), 5);
+        for (k, p) in l.pacf.iter().enumerate().skip(1) {
+            assert!(p.abs() < 1e-10, "pacf[{k}] = {p}");
         }
         assert!((l.sigma2[1] - 1.0).abs() < 1e-10);
     }

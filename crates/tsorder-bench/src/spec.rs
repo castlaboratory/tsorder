@@ -231,16 +231,18 @@ impl Est {
                     "bic" => t.ln(),
                     other => panic!("unknown cc_ic penalty {other}"),
                 };
-                let m = cc.correlations.len();
                 let mut best = (f64::INFINITY, 0usize);
                 let mut loglik = 0.0;
-                for r in 0..=m {
+                // Ranks 0..=m: one step per correlation, plus a last one
+                // (None) that only scores the full rank m.
+                let steps = cc.correlations.iter().map(Some).chain([None]);
+                for (r, rho) in steps.enumerate() {
                     let crit = t * loglik + c_t * (r * (2 * w - r)) as f64;
                     if crit < best.0 {
                         best = (crit, r);
                     }
-                    if r < m {
-                        let rho2 = cc.correlations[r].powi(2).min(1.0 - 1e-12);
+                    if let Some(rho) = rho {
+                        let rho2 = rho.powi(2).min(1.0 - 1e-12);
                         loglik += (1.0 - rho2).ln();
                     }
                 }
