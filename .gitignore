@@ -30,3 +30,6 @@ bindings/r/docs/
 bindings/r/src/*.o
 bindings/r/src/*.so
 bindings/r/src/Makevars
+
+# built R package tarballs
+bindings/*.tar.gz
